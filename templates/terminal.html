@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Terminal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        #terminal {
+            width: 800px;
+            height: 500px;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #000;
+        }
+        .status {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal"></div>
+
+    <script>
+        const term = new Terminal({
+            cursorBlink: true,
+            fontSize: 14,
+            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+            theme: {
+                background: '#000000',
+                foreground: '#ffffff'
+            },
+            convertEol: true,
+            scrollback: 1000,
+            cols: 80,
+            rows: 24
+        });
+
+        term.open(document.getElementById('terminal'));
+
+        const socket = io('http://localhost:5000', {
+            transports: ['websocket'],
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
+        });
+
+        let sessionId = null;
+
+        socket.on('connect', () => {
+            term.write('Connected to terminal server...\r\n');
+        });
+
+        socket.on('session_id', (data) => {
+            sessionId = data.id;
+            term.write('Starting container...\r\n');
+            socket.emit('start_session', { id: sessionId });
+        });
+
+        socket.on('container_ready', () => {
+            term.write('Container ready!\r\n\r\n');
+        });
+
+        socket.on('output', (data) => {
+            term.write(data.output);
+        });
+
+        socket.on('error', (data) => {
+            term.write('\r\nError: ' + data.error + '\r\n');
+        });
+
+        term.onData((data) => {
+            if (sessionId) {
+                socket.emit('input', {
+                    id: sessionId,
+                    input: data
+                });
+            }
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (sessionId) {
+                socket.emit('cleanup', { id: sessionId });
+            }
+        });
+    </script>
+</body>
+</html>
