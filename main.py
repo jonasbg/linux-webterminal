@@ -99,10 +99,16 @@ class TTYController:
             if not socket:
                 return None
 
-            # Reduce timeout to make reads more responsive
-            socket._sock.settimeout(0.01)  # 100ms timeout instead of 5s
+            import select
+            # Use select to check if there's data available to read
+            readable, _, _ = select.select([socket._sock], [], [], 0.1)
+            if not readable:
+                return None
 
-            data = socket._sock.recv(4096)  # Increased buffer size
+            data = socket._sock.recv(4096)
+            if not data:
+                return None
+
             return data.decode('utf-8', errors='replace')
         except Exception as e:
             print(f"Error reading from container: {e}")
@@ -154,10 +160,14 @@ def handle_start_session(data):
         def read_output(ws_id):
             with app.app_context():
                 while True:
-                    output = tty_controller.read_from_container(ws_id)
-                    if output:
-                        socketio.emit('output', {'output': output})
-                    socketio.sleep(0.01)  # Reduced sleep time to 10ms
+                    try:
+                        output = tty_controller.read_from_container(ws_id)
+                        if output:
+                            socketio.emit('output', {'output': output})
+                    except Exception as e:
+                        print(f"Error in read loop: {e}")
+                        break
+                    socketio.sleep(0.05)  # Sleep for 50ms between reads
 
         socketio.start_background_task(read_output, ws_id)
         emit('container_ready')
