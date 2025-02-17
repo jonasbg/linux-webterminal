@@ -25,6 +25,7 @@ docker build -t terminal-server .
 ```
 
 Run the server in docker
+
 ```bash
 docker run -p 5001:5000 --rm -it -v /var/run/docker.sock:/var/run/docker.sock --name terminal-server terminal-server
 ```
