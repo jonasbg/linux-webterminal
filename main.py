@@ -13,27 +13,53 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 class TTYController:
     def __init__(self):
-        self.client = docker.DockerClient(
-            base_url='unix:///Users/jonasbg/.colima/docker.sock'
-        )
+        self.client = self._get_docker_client()
         self.sessions = {}
         self.lock = Lock()
+
+    def _get_docker_client(self):
+        # Try different Docker socket locations
+        socket_paths = [
+            'unix:///var/run/docker.sock',  # Standard Docker socket
+            'unix:///Users/jonasbg/.colima/docker.sock',  # Colima socket
+        ]
+
+        for socket_path in socket_paths:
+            try:
+                client = docker.DockerClient(base_url=socket_path)
+                client.ping()  # Test connection
+                print(f"Connected to Docker daemon at {socket_path}")
+                return client
+            except Exception as e:
+                print(f"Failed to connect to {socket_path}: {e}")
+                continue
+
+        raise Exception("Could not connect to any Docker socket")
 
     def create_session(self, ws_id):
         with self.lock:
             try:
                 print(f"Creating container for session {ws_id}")
-                # Create container with interactive shell
+                # Create container with security constraints
                 container = self.client.containers.run(
                     'alpine:latest',
-                    command=["/bin/sh"],  # Changed from the continuous echo
+                    command=["/bin/sh"],
                     detach=True,
                     tty=True,
                     stdin_open=True,
                     remove=True,
+                    # Security configurations
+                    user='1000:1000',  # Non-root user
+                    security_opt=['no-new-privileges:true'],
+                    cap_drop=['ALL'],  # Drop all capabilities
+                    mem_limit='64m',  # Memory limit
+                    pids_limit=100,  # Process limit
+                    read_only=True,  # Read-only root filesystem
+                    tmpfs={'/tmp': 'size=64m,noexec,nosuid'},  # Temporary writable storage
                     environment={
                         "TERM": "xterm",
-                        "PS1": "\\w \\$ "  # Add a shell prompt
+                        "PS1": "\\w \\$ ",
+                        "HOME": "/tmp"
                     }
                 )
                 print(f"Container created with ID: {container.id}")
