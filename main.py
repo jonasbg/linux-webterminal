@@ -42,8 +42,7 @@ class TTYController:
                 print(f"Creating container for session {ws_id}")
                 # Create container with security constraints
                 container = self.client.containers.run(
-                    'alpine:latest',
-                    command=["/bin/sh"],
+                    'terminal-base:latest',
                     detach=True,
                     tty=True,
                     stdin_open=True,
@@ -55,11 +54,14 @@ class TTYController:
                     mem_limit='64m',  # Memory limit
                     pids_limit=100,  # Process limit
                     read_only=True,  # Read-only root filesystem
-                    tmpfs={'/tmp': 'size=64m,noexec,nosuid'},  # Temporary writable storage
+                    tmpfs={
+                        '/tmp': 'size=64m,noexec,nosuid',
+                        '/home/termuser': 'size=64m,exec,uid=1000,gid=1000'  # Add this line
+                    },  # Temporary writable storage
                     environment={
                         "TERM": "xterm",
                         "PS1": "\\w \\$ ",
-                        "HOME": "/tmp"
+                        "HOME": "/home/termuser",
                     }
                 )
                 print(f"Container created with ID: {container.id}")
@@ -71,7 +73,7 @@ class TTYController:
                 print("Creating exec instance")
                 exec_create = api_client.exec_create(
                     container.id,
-                    '/bin/sh',
+                    '/bin/bash -l',
                     stdin=True,
                     tty=True
                 )

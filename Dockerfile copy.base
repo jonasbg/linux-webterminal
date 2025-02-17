@@ -1,0 +1,86 @@
+FROM alpine:latest
+
+# System dependencies and utilities
+RUN apk add --no-cache \
+    sudo \
+    bash \
+    curl \
+    wget \
+    git \
+    vim \
+    nano \
+    tzdata \
+    ca-certificates \
+    shadow
+
+# Create non-root user and set up sudo
+RUN addgroup -g 1000 termuser && \
+    adduser -D -u 1000 -G termuser termuser -s /bin/bash -h /home/termuser && \
+    echo "termuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Set up bash as default shell for termuser
+RUN chsh -s /bin/bash termuser
+RUN usermod -s /bin/bash termuser
+
+# Create necessary directories and set permissions
+RUN mkdir -p /var/cache/apk /etc/apk /home/termuser && \
+    chown -R termuser:termuser /var/cache/apk /etc/apk /home/termuser && \
+    chmod 755 /home/termuser
+
+# Configure bash environment for termuser
+COPY --chown=termuser:termuser <<-'EOF' /home/termuser/.bashrc
+# Custom bash prompt
+export PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+# Useful aliases
+alias ll='ls -la'
+alias l='ls -l'
+alias cls='clear'
+alias ..='cd ..'
+alias ...='cd ../..'
+
+# Environment variables
+RUN export PATH=$PATH:/home/termuser/.local/bin
+RUN export LANG=en_US.UTF-8
+RUN export EDITOR=vim
+RUN export HOME=/home/termuser
+cd $HOME
+
+# History settings
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTCONTROL=ignoreboth
+export HISTTIMEFORMAT="%F %T "
+
+# Enable color support
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+EOF
+
+# Create .profile for environment variables
+COPY --chown=termuser:termuser <<-'EOF' /home/termuser/.profile
+# Set home directory
+export HOME=/home/termuser
+cd $HOME
+
+# Load .bashrc if running bash
+if [ -n "$BASH_VERSION" ]; then
+    if [ -f "$HOME/.bashrc" ]; then
+        . "$HOME/.bashrc"
+    fi
+fi
+EOF
+
+# Create common directories in home
+RUN mkdir -p /home/termuser/Downloads /home/termuser/Documents /home/termuser/Projects && \
+    chown -R termuser:termuser /home/termuser
+
+# Switch to termuser and set environment
+USER termuser
+WORKDIR /home/termuser
+
+# Set default shell to bash and ensure it sources profile
+SHELL ["/bin/bash", "-l", "-c"]
+
+# Default command (login shell)
+CMD ["/bin/bash", "-l"]
