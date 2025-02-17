@@ -73,7 +73,7 @@
             term.fit();
         });
 
-        const socket = io('http://localhost:5000', {
+        const socket = io(window.location.origin, {
             transports: ['websocket'],
             reconnectionAttempts: 5,
             reconnectionDelay: 1000

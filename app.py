@@ -1,3 +1,5 @@
+import signal
+import sys
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
@@ -183,6 +185,18 @@ class TTYController:
 
 tty_controller = TTYController()
 
+def cleanup_all_containers(signum, frame):
+    print("\nCleaning up containers before shutdown...")
+    # Copy the session IDs since we'll be modifying the dictionary during iteration
+    session_ids = list(tty_controller.sessions.keys())
+    for ws_id in session_ids:
+        try:
+            tty_controller.cleanup_session(ws_id)
+        except Exception as e:
+            print(f"Error cleaning up session {ws_id}: {e}")
+    print("Cleanup complete, shutting down")
+    sys.exit(0)
+
 @app.route('/')
 def index():
     return render_template('terminal.html')
@@ -245,7 +259,14 @@ def handle_disconnect():
         ws_id = tty_controller.user_sessions[user_id]
         tty_controller.cleanup_session(ws_id)
 
+signal.signal(signal.SIGINT, cleanup_all_containers)
+signal.signal(signal.SIGTERM, cleanup_all_containers)
+
 if __name__ == '__main__':
-    print("\nServer starting on port 5000")
-    print("Open http://localhost:5000 in your browser\n")
-    socketio.run(app, debug=True)
+    try:
+        port = int(os.environ.get('PORT', 5000))
+        print(f"\nServer starting on port {port}")
+        print(f"Open http://localhost:{port} in your browser\n")
+        socketio.run(app, host='0.0.0.0', port=port, debug=True)
+    finally:
+        cleanup_all_containers(None, None)
