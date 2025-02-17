@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import docker
@@ -15,6 +15,7 @@ class TTYController:
     def __init__(self):
         self.client = self._get_docker_client()
         self.sessions = {}
+        self.user_sessions = {}  # New dict to track user sessions
         self.lock = Lock()
 
     def _get_docker_client(self):
@@ -36,10 +37,15 @@ class TTYController:
 
         raise Exception("Could not connect to any Docker socket")
 
-    def create_session(self, ws_id):
+    def create_session(self, ws_id, user_id):  # Add user_id parameter
         with self.lock:
+            if user_id in self.user_sessions:
+                # Clean up old session if user already has one
+                old_ws_id = self.user_sessions[user_id]
+                self.cleanup_session(old_ws_id)
+
             try:
-                print(f"Creating container for session {ws_id}")
+                print(f"Creating container for session {ws_id} (user: {user_id})")
                 # Create container with security constraints
                 container = self.client.containers.run(
                     'terminal-base:latest',
@@ -91,8 +97,10 @@ class TTYController:
                 self.sessions[ws_id] = {
                     'container': container,
                     'exec_id': exec_create['Id'],
-                    'socket': exec_socket
+                    'socket': exec_socket,
+                    'user_id': user_id  # Add user_id to session info
                 }
+                self.user_sessions[user_id] = ws_id
 
                 return container.id
 
@@ -147,6 +155,9 @@ class TTYController:
             if ws_id in self.sessions:
                 session = self.sessions[ws_id]
                 try:
+                    # Get user_id before cleanup
+                    user_id = session.get('user_id')
+
                     if session.get('socket'):
                         try:
                             session['socket']._sock.close()
@@ -160,7 +171,11 @@ class TTYController:
                         except:
                             pass
 
-                    print(f"Cleaned up session {ws_id}")
+                    # Remove user from user_sessions if exists
+                    if user_id and user_id in self.user_sessions:
+                        del self.user_sessions[user_id]
+
+                    print(f"Cleaned up session {ws_id} for user {user_id}")
                 except Exception as e:
                     print(f"Error in cleanup: {e}")
                 finally:
@@ -175,29 +190,33 @@ def index():
 @socketio.on('connect')
 def handle_connect():
     ws_id = str(uuid.uuid4())
-    print(f"New connection: {ws_id}")
-    emit('session_id', {'id': ws_id})
+    user_id = request.sid  # Use Socket.IO session ID as user identifier
+    print(f"New connection: {ws_id} (user: {user_id})")
+    emit('session_id', {'id': ws_id, 'user_id': user_id})
 
 @socketio.on('start_session')
 def handle_start_session(data):
     ws_id = data['id']
+    user_id = request.sid
     try:
-        container_id = tty_controller.create_session(ws_id)
-        print(f"Created container {container_id} for session {ws_id}")
+        container_id = tty_controller.create_session(ws_id, user_id)
+        print(f"Created container {container_id} for session {ws_id} (user: {user_id})")
 
-        def read_output(ws_id):
+        def read_output(ws_id, user_id):  # Add user_id parameter
             with app.app_context():
                 while True:
                     try:
                         output = tty_controller.read_from_container(ws_id)
                         if output:
-                            socketio.emit('output', {'output': output})
+                            # Emit only to the specific user's socket
+                            socketio.emit('output', {'output': output}, room=user_id)
                     except Exception as e:
                         print(f"Error in read loop: {e}")
                         break
-                    socketio.sleep(0.05)  # Sleep for 50ms between reads
+                    socketio.sleep(0.05)
 
-        socketio.start_background_task(read_output, ws_id)
+        # Pass both ws_id and user_id to read_output
+        socketio.start_background_task(read_output, ws_id, user_id)
         emit('container_ready')
 
     except Exception as e:
@@ -220,8 +239,10 @@ def handle_input(data):
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print("Client disconnected")
-    for ws_id in list(tty_controller.sessions.keys()):
+    user_id = request.sid
+    print(f"Client disconnected (user: {user_id})")
+    if user_id in tty_controller.user_sessions:
+        ws_id = tty_controller.user_sessions[user_id]
         tty_controller.cleanup_session(ws_id)
 
 if __name__ == '__main__':
