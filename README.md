@@ -8,12 +8,22 @@ A secure web-based terminal that runs commands in isolated Docker containers.
 
 Build the base image for a specific platform:
 ```bash
-docker build --platform "linux/arm64" -t terminal-base:latest --file Dockerfile.base .
+docker build --platform "linux/amd64" -t terminal-base:latest --file Dockerfile.base .
 ```
 
 Remove all containers based on Alpine image:
 ```bash
-docker rm -f $(docker ps -a --filter "ancestor=alpine" -q)
+docker rm -f $(docker ps -a --filter "ancestor=terminal-base" -q)
+```
+
+Build the container for running the server
+```bash
+docker build -t terminal-server .
+```
+
+Run the server in docker
+```bash
+docker run -p 5001:5000 --rm -it -v /var/run/docker.sock:/var/run/docker.sock --name terminal-server terminal-serve
 ```
 
 ## Development
