@@ -1,79 +1,64 @@
 FROM alpine:latest
 
-# System dependencies and utilities
+# System dependencies (minimal set)
 RUN apk add --no-cache \
     bash \
-    git \
     vim \
-    nano
+    git
 
-# Create non-root user (no sudo needed)
+# Create whitelisted binaries directory
+RUN mkdir -p /usr/local/bin/whitelisted
+
+# Copy only allowed executables to whitelisted directory
+RUN for cmd in bash cat cd chmod cp echo grep head ls mkdir mv pwd rm tail touch vi vim; do \
+    if [ -f "/bin/$cmd" ]; then cp "/bin/$cmd" "/usr/local/bin/"; \
+    elif [ -f "/usr/bin/$cmd" ]; then cp "/usr/bin/$cmd" "/usr/local/bin/"; fi; \
+    done && \
+    chmod -R 555 /usr/local/bin
+
+# Create non-root user
 RUN addgroup -g 1000 termuser && \
     adduser -D -u 1000 -G termuser termuser -h /home/termuser
 
-# Configure bash environment for termuser
+# Set up lab environment (using system PATH temporarily)
+RUN mkdir -p /home/termuser/"01. Linux I" && \
+    cd /home/termuser/"01. Linux I" && \
+    git clone https://github.com/veltman/clmystery /home/termuser/"01. Linux I" && \
+    # Remove .git directory to prevent modifications
+    rm -rf .git && \
+    # Set appropriate permissions
+    chown -R termuser:termuser /home/termuser/"01. Linux I" && \
+    chmod -R 544 /home/termuser/"01. Linux I"
+
+# Configure bash environment
 COPY --chown=termuser:termuser <<-'EOF' /home/termuser/.bashrc
+# Enable color support
+export TERM=xterm-256color
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+
 # Custom bash prompt
 export PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 
-# Useful aliases
-alias ll='ls -la'
-alias l='ls -l'
-alias cls='clear'
-alias ..='cd ..'
-alias ...='cd ../..'
+# Set PATH to only include whitelisted binaries
+export PATH=/usr/local/bin
 
 # Environment variables
-export PATH=$PATH:/home/termuser/.local/bin
-export LANG=en_US.UTF-8
+export LANG=nb_NO.UTF-8
 export EDITOR=vim
 export HOME=/home/termuser
 
-# History settings
-export HISTSIZE=10000
-export HISTFILESIZE=20000
-export HISTCONTROL=ignoreboth
-export HISTTIMEFORMAT="%F %T "
-
-# Enable color support
-alias ls='ls --color=auto'
-alias grep='grep --color=auto'
+# Basic aliases for whitelisted commands
+alias ll='ls -lah'
+alias l='ls -l'
+alias ..='cd ..'
 EOF
 
-# Create .profile for environment variables
-COPY --chown=termuser:termuser <<-'EOF' /home/termuser/.profile
-# Load .bashrc if running bash
-if [ -n "$BASH_VERSION" ]; then
-    if [ -f "$HOME/.bashrc" ]; then
-        . "$HOME/.bashrc"
-    fi
-fi
-EOF
+# Ensure system-wide PATH is restricted
+ENV PATH=/usr/local/bin
 
-# Set up lab files
-RUN mkdir -p /home/termuser/"01. Linux I"/ && \
-    git clone https://github.com/veltman/clmystery /home/termuser/"01. Linux I"/ && \
-    chown -R termuser:termuser /home/termuser
-
-# Remove potentially dangerous utilities
-RUN rm -f /usr/bin/install /usr/bin/sha512sum /usr/bin/ipcrm /usr/bin/showkey \
-    /usr/bin/awk /usr/bin/ipcs /usr/bin/shred  /usr/bin/killall /usr/bin/shuf \
-    /usr/bin/bc /usr/bin/last /usr/bin/beep /usr/bin/ldd /usr/bin/split \
-    /usr/bin/blkdiscard /usr/bin/less /usr/bin/ssl_client /usr/bin/bunzip2 /usr/bin/logger /usr/bin/strings \
-    /usr/bin/bzcat /usr/bin/lsof /usr/bin/sum /usr/bin/bzip2 /usr/bin/lsusb /usr/bin/tac \
-    /usr/bin/cal /usr/bin/lzcat /usr/bin/chvt /usr/bin/lzma /usr/bin/tee /usr/bin/cksum \
-    /usr/bin/cmp /usr/bin/mesg /usr/bin/timeout /usr/bin/comm /usr/bin/microcom \
-    /usr/bin/cpio /usr/bin/mkfifo /usr/bin/crontab /usr/bin/mkpasswd /usr/bin/traceroute \
-    /usr/bin/cryptpw /usr/bin/traceroute6 /usr/bin/cut /usr/bin/nc /usr/bin/tree \
-    /usr/bin/dc /usr/bin/nl /usr/bin/truncate /usr/bin/deallocvt /usr/bin/nmeter \
-    /usr/bin/diff /usr/bin/nohup /usr/bin/ttysize /usr/bin/dirname /usr/bin/nproc /usr/bin/udhcpc6 /usr/bin/wget
-
-# Switch to termuser and set environment
+# Switch to termuser
 USER termuser
 WORKDIR /home/termuser
 
-# Set default shell to bash and ensure it sources profile
-SHELL ["/bin/bash", "-l", "-c"]
-
-# Default command (login shell)
 CMD ["/bin/bash", "-l"]
