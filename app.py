@@ -421,15 +421,60 @@ tty_controller = TTYController()
 
 def cleanup_all_containers(signum, frame):
     print("\nCleaning up containers before shutdown...")
-    # Copy the session IDs since we'll be modifying the dictionary during iteration
-    session_ids = list(tty_controller.sessions.keys())
-    for ws_id in session_ids:
+    try:
+        # Copy the session IDs since we'll be modifying the dictionary during iteration
+        session_ids = list(tty_controller.sessions.keys())
+
+        for ws_id in session_ids:
+            try:
+                session = tty_controller.sessions[ws_id]
+
+                # Close the socket using eventlet's green socket
+                if session.get('socket'):
+                    try:
+                        eventlet.spawn_n(session['socket']._sock.close)
+                    except Exception as e:
+                        print(f"Error closing socket for session {ws_id}: {e}")
+
+                # Stop and remove container using eventlet's green thread
+                if session.get('container'):
+                    try:
+                        def remove_container():
+                            session['container'].stop(timeout=1)
+                            session['container'].remove(force=True)
+                        eventlet.spawn_n(remove_container)
+                    except Exception as e:
+                        print(f"Error removing container for session {ws_id}: {e}")
+
+                # Clean up user session mapping
+                user_id = session.get('user_id')
+                if user_id and user_id in tty_controller.user_sessions:
+                    del tty_controller.user_sessions[user_id]
+
+            except Exception as e:
+                print(f"Error cleaning up session {ws_id}: {e}")
+            finally:
+                # Always remove the session from the sessions dict
+                if ws_id in tty_controller.sessions:
+                    del tty_controller.sessions[ws_id]
+
+        # Give eventlet a chance to process the cleanup operations
+        eventlet.sleep(0.5)
+
+    except Exception as e:
+        print(f"Error during cleanup: {e}")
+    finally:
+        # Close the Docker client connection using eventlet
         try:
-            tty_controller.cleanup_session(ws_id)
+            def close_client():
+                tty_controller.client.close()
+            eventlet.spawn_n(close_client)
+            eventlet.sleep(0.1)  # Give it a moment to complete
         except Exception as e:
-            print(f"Error cleaning up session {ws_id}: {e}")
-    print("Cleanup complete, shutting down")
-    sys.exit(0)
+            print(f"Error closing Docker client: {e}")
+
+        print("Cleanup complete, shutting down")
+        sys.exit(0)
 
 @app.route('/')
 def index():
@@ -496,7 +541,7 @@ signal.signal(signal.SIGTERM, cleanup_all_containers)
 
 if __name__ == '__main__':
     try:
-        port = int(os.environ.get('PORT', 5001))
+        port = int(os.environ.get('PORT', 5000))
         app.logger.info(f"Server starting on port {port}")
 
         socketio.run(
