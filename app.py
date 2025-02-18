@@ -1,3 +1,7 @@
+# Eventlet monkey patch must come first
+import eventlet
+eventlet.monkey_patch()
+
 import signal
 import sys
 from flask import Flask, render_template, request
@@ -8,10 +12,14 @@ import os
 import uuid
 from threading import Lock
 
+# Create Flask app and wrap with app context
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+app.app_context().push()  # Push an application context
+
+# Configure app
+CORS(app, resources={r"/*": {"origins": os.environ.get('HOST', '*')}})
 app.config['SECRET_KEY'] = os.urandom(24)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 class TTYController:
     def __init__(self):
@@ -24,7 +32,8 @@ class TTYController:
         # Try different Docker socket locations
         socket_paths = [
             'unix:///var/run/docker.sock',  # Standard Docker socket
-            'unix:///Users/jonasbg/.colima/docker.sock',  # Colima socket
+            'unix://' + os.path.expanduser('~') + '/.colima/docker.sock',  # Colima socket
+            'unix:///run/podman/podman.sock',  # Podman socket
         ]
 
         for socket_path in socket_paths:
@@ -64,7 +73,7 @@ class TTYController:
                     read_only=True,  # Read-only root filesystem
                     tmpfs={
                         '/tmp': 'size=64m,noexec,nosuid',
-                        '/home/termuser': 'size=64m,exec,uid=1000,gid=1000'  # Add this line
+                        '/home': 'size=64m,exec'
                     },  # Temporary writable storage
                     environment={
                         "TERM": "xterm",
@@ -265,8 +274,17 @@ signal.signal(signal.SIGTERM, cleanup_all_containers)
 if __name__ == '__main__':
     try:
         port = int(os.environ.get('PORT', 5000))
-        print(f"\nServer starting on port {port}")
-        print(f"Open http://localhost:{port} in your browser\n")
-        socketio.run(app, host='0.0.0.0', port=port, debug=True)
+        app.logger.info(f"Server starting on port {port}")
+
+        socketio.run(
+            app,
+            host='0.0.0.0',
+            port=port,
+            debug=False,
+            use_reloader=False,
+            log_output=True
+        )
+    except Exception as e:
+        app.logger.error(f"Server failed to start: {e}")
     finally:
         cleanup_all_containers(None, None)
