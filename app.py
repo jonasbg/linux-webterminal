@@ -229,6 +229,27 @@ class TTYController:
         # Get limits from environment
         self.max_containers = int(os.environ.get('MAX_CONTAINERS', 10))
         self.container_lifetime = int(os.environ.get('CONTAINER_LIFETIME', 3600))
+        # Clean up any leftover containers on startup
+        self._cleanup_leftover_containers()
+
+    def _cleanup_leftover_containers(self):
+        """Clean up any containers with our label that might have been left running"""
+        try:
+            containers = self.client.containers.list(
+                all=True,
+                filters={
+                    'label': ['app=web-terminal']
+                }
+            )
+            for container in containers:
+                try:
+                    container.stop(timeout=1)
+                    container.remove(force=True)
+                    print(f"Cleaned up leftover container: {container.id[:12]}")
+                except Exception as e:
+                    print(f"Error cleaning up container {container.id[:12]}: {e}")
+        except Exception as e:
+            print(f"Error listing containers for cleanup: {e}")
 
     def create_session(self, ws_id, user_id, request=None):
         with self.lock:
@@ -249,6 +270,11 @@ class TTYController:
                     stdin_open=True,
                     remove=True,
                     user='1000:1000',
+                    labels={
+                        'app': 'web-terminal',
+                        'ws_id': ws_id,
+                        'user_id': user_id
+                    },
                     security_opt=['no-new-privileges:true'],
                     cap_drop=['ALL'],
                     network="none",
