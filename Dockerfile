@@ -13,4 +13,4 @@ COPY . .
 EXPOSE 5000
 
 # Fix the Gunicorn command format
-CMD ["gunicorn", "--workers", "4", "--bind", "0.0.0.0:5000", "app:app", "--reload"]
+CMD ["gunicorn", "--workers", "4", "-k", "eventlet", "--bind", "0.0.0.0:5000", "app:app", "--reload"]
