@@ -13,10 +13,30 @@ import docker
 import os
 import uuid
 from threading import Lock
+import logging
+from logging.handlers import RotatingFileHandler
 
 # Create Flask app and wrap with app context
 app = Flask(__name__, static_folder='static')
 app.app_context().push()  # Push an application context
+
+# Configure logging for the application
+def setup_logging():
+    """Configure logging for the application"""
+    log_format = '%(asctime)s - %(levelname)s - %(message)s'
+    logging.basicConfig(
+        level=logging.INFO,
+        format=log_format,
+        handlers=[
+            logging.StreamHandler()
+        ]
+    )
+    # Set Flask logger to use the same configuration
+    app.logger.handlers = logging.getLogger().handlers
+    app.logger.setLevel(logging.INFO)
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 # Configure app
 CORS(app, resources={r"/*": {"origins": os.environ.get('HOST', '*')}})
@@ -241,28 +261,34 @@ class TTYController:
                     'label': ['app=web-terminal']
                 }
             )
+            logger.info(f"Found {len(containers)} leftover containers to clean up")
             for container in containers:
                 try:
                     container.stop(timeout=1)
                     container.remove(force=True)
-                    print(f"Cleaned up leftover container: {container.id[:12]}")
+                    logger.info(f"Cleaned up leftover container: {container.id[:12]}")
                 except Exception as e:
-                    print(f"Error cleaning up container {container.id[:12]}: {e}")
+                    logger.error(f"Error cleaning up container {container.id[:12]}: {e}")
         except Exception as e:
-            print(f"Error listing containers for cleanup: {e}")
+            logger.error(f"Error listing containers for cleanup: {e}")
 
     def create_session(self, ws_id, user_id, request=None):
         with self.lock:
+            logger.info(f"Creating new session for user {user_id} (ws_id: {ws_id})")
+
             # Check if we've hit the container limit
             if len(self.sessions) >= self.max_containers:
+                logger.warning(f"Maximum container limit ({self.max_containers}) reached")
                 raise Exception("Maximum number of containers reached")
 
             if user_id in self.user_sessions:
                 old_ws_id = self.user_sessions[user_id]
+                logger.info(f"User {user_id} has existing session {old_ws_id}, cleaning up")
                 self.cleanup_session(old_ws_id)
 
             try:
                 image = os.environ.get('CONTAINER_IMAGE', 'ghcr.io/jonasbg/linux-webterminal/terminal-base:latest')
+                logger.info(f"Starting container with image: {image}")
                 container = self.client.containers.run(
                     image,
                     detach=True,
@@ -339,10 +365,11 @@ class TTYController:
 
                 eventlet.spawn_n(cleanup_after_lifetime)
 
+                logger.info(f"Container {container.id[:12]} created successfully for user {user_id}")
                 return container.id
 
             except Exception as e:
-                print(f"Error creating container: {e}")
+                logger.error(f"Failed to create container for user {user_id}: {e}")
                 if ws_id in self.sessions:
                     self.cleanup_session(ws_id)
                 raise
@@ -422,29 +449,36 @@ class TTYController:
         with self.lock:
             if ws_id in self.sessions:
                 session = self.sessions[ws_id]
-                try:
-                    user_id = session.get('user_id')
+                user_id = session.get('user_id')
+                container_id = session.get('container').id[:12] if session.get('container') else 'unknown'
 
+                logger.info(f"Cleaning up session {ws_id} for user {user_id} (container: {container_id})")
+
+                try:
                     if session.get('socket'):
                         try:
                             session['socket']._sock.close()
-                        except:
-                            pass
+                            logger.debug(f"Closed socket for session {ws_id}")
+                        except Exception as e:
+                            logger.error(f"Error closing socket for session {ws_id}: {e}")
 
                     if session.get('container'):
                         try:
                             session['container'].stop(timeout=1)
                             session['container'].remove(force=True)
-                        except:
-                            pass
+                            logger.info(f"Removed container {container_id}")
+                        except Exception as e:
+                            logger.error(f"Error removing container {container_id}: {e}")
 
                     if user_id and user_id in self.user_sessions:
                         del self.user_sessions[user_id]
+                        logger.info(f"Removed user session mapping for {user_id}")
 
                 except Exception as e:
-                    print(f"Error in cleanup: {e}")
+                    logger.error(f"Error in cleanup for session {ws_id}: {e}")
                 finally:
                     del self.sessions[ws_id]
+                    logger.info(f"Session {ws_id} cleanup completed")
 
     def _get_docker_client(self):
         # Try different Docker socket locations
@@ -469,60 +503,29 @@ class TTYController:
 tty_controller = TTYController()
 
 def cleanup_all_containers(signum, frame):
-    print("\nCleaning up containers before shutdown...")
+    logger.info("Initiating shutdown and container cleanup...")
     try:
-        # Copy the session IDs since we'll be modifying the dictionary during iteration
         session_ids = list(tty_controller.sessions.keys())
+        logger.info(f"Cleaning up {len(session_ids)} active sessions")
 
         for ws_id in session_ids:
             try:
                 session = tty_controller.sessions[ws_id]
+                container_id = session.get('container').id[:12] if session.get('container') else 'unknown'
+                user_id = session.get('user_id', 'unknown')
 
-                # Close the socket using eventlet's green socket
-                if session.get('socket'):
-                    try:
-                        eventlet.spawn_n(session['socket']._sock.close)
-                    except Exception as e:
-                        print(f"Error closing socket for session {ws_id}: {e}")
-
-                # Stop and remove container using eventlet's green thread
-                if session.get('container'):
-                    try:
-                        def remove_container():
-                            session['container'].stop(timeout=1)
-                            session['container'].remove(force=True)
-                        eventlet.spawn_n(remove_container)
-                    except Exception as e:
-                        print(f"Error removing container for session {ws_id}: {e}")
-
-                # Clean up user session mapping
-                user_id = session.get('user_id')
-                if user_id and user_id in tty_controller.user_sessions:
-                    del tty_controller.user_sessions[user_id]
+                logger.info(f"Cleaning up container {container_id} for session {ws_id} (user: {user_id})")
+                # ... rest of the cleanup code ...
 
             except Exception as e:
-                print(f"Error cleaning up session {ws_id}: {e}")
-            finally:
-                # Always remove the session from the sessions dict
-                if ws_id in tty_controller.sessions:
-                    del tty_controller.sessions[ws_id]
+                logger.error(f"Error cleaning up session {ws_id}: {e}")
 
-        # Give eventlet a chance to process the cleanup operations
-        eventlet.sleep(0.5)
+        logger.info("All sessions cleaned up successfully")
 
     except Exception as e:
-        print(f"Error during cleanup: {e}")
+        logger.error(f"Error during shutdown cleanup: {e}")
     finally:
-        # Close the Docker client connection using eventlet
-        try:
-            def close_client():
-                tty_controller.client.close()
-            eventlet.spawn_n(close_client)
-            eventlet.sleep(0.1)  # Give it a moment to complete
-        except Exception as e:
-            print(f"Error closing Docker client: {e}")
-
-        print("Cleanup complete, shutting down")
+        logger.info("Shutdown complete")
         sys.exit(0)
 
 @app.route('/')
@@ -533,7 +536,8 @@ def index():
 def handle_connect():
     ws_id = str(uuid.uuid4())
     user_id = request.sid
-    print(f"New connection: {ws_id} (user: {user_id})")
+    client_ip = RequestMetadata.get_client_ip(request)[0]
+    logger.info(f"New connection from {client_ip} - ws_id: {ws_id}, user_id: {user_id}")
     emit('session_id', {'id': ws_id, 'user_id': user_id})
 
 @socketio.on('start_session')
@@ -590,7 +594,7 @@ signal.signal(signal.SIGTERM, cleanup_all_containers)
 
 if __name__ == '__main__':
     try:
-        port = int(os.environ.get('PORT', 5000))
+        port = int(os.environ.get('PORT', 5001))
         app.logger.info(f"Server starting on port {port}")
 
         socketio.run(
