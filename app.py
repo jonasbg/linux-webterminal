@@ -594,7 +594,7 @@ signal.signal(signal.SIGTERM, cleanup_all_containers)
 
 if __name__ == '__main__':
     try:
-        port = int(os.environ.get('PORT', 5001))
+        port = int(os.environ.get('PORT', 5000))
         app.logger.info(f"Server starting on port {port}")
 
         socketio.run(
