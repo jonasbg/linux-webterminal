@@ -13,7 +13,7 @@ import uuid
 from threading import Lock
 
 # Create Flask app and wrap with app context
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.app_context().push()  # Push an application context
 
 # Configure app
