@@ -36,6 +36,19 @@ List all uniq IP addresses from your logs:
 grep -hoP 'Origin IP: \K[\d\.]+' logs/*.log | sort -u
 ```
 
+### Environments
+
+Here's a Markdown table containing the extracted environment variables, their default values, and descriptions:
+
+| Environment Variable     | Default Value | Description |
+|--------------------------|--------------|-------------|
+| `HOST`                  | `*`          | Defines the CORS allowed origins. |
+| `TTY_LOGGING_ENABLED`   | `false`      | Enables or disables logging for terminal sessions. |
+| `TTY_LOG_DIR`           | `./logs`     | Directory where session logs are stored. |
+| `MAX_CONTAINERS`        | `10`         | Maximum number of terminal containers allowed. |
+| `CONTAINER_LIFETIME`    | `3600`       | Lifetime (in seconds) before a container is automatically cleaned up. |
+| `CONTAINER_IMAGE`       | `ghcr.io/jonasbg/linux-webterminal/terminal-base:latest` | Docker image used for terminal sessions. |
+
 ## Development
 
 More details about development and setup will be added here.

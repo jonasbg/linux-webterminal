@@ -227,7 +227,7 @@ class TTYController:
         self.lock = Lock()
         self.logger = TTYLogger()
         # Get limits from environment
-        self.max_containers = int(os.environ.get('MAX_CONTAINERS', 2))
+        self.max_containers = int(os.environ.get('MAX_CONTAINERS', 10))
         self.container_lifetime = int(os.environ.get('CONTAINER_LIFETIME', 3600))
 
     def create_session(self, ws_id, user_id, request=None):
@@ -241,8 +241,9 @@ class TTYController:
                 self.cleanup_session(old_ws_id)
 
             try:
+                image = os.environ.get('CONTAINER_IMAGE', 'ghcr.io/jonasbg/linux-webterminal/terminal-base:latest')
                 container = self.client.containers.run(
-                    'terminal-base:latest',
+                    image,
                     detach=True,
                     tty=True,
                     stdin_open=True,
