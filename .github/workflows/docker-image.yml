@@ -21,7 +21,7 @@ jobs:
     # Build and push the base (client) image
     - name: Build and push base (client) OCI image
       run: |
-        BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/terminal-base"
+        BASE_IMAGE="ghcr.io/${{ github.repository }}/terminal-base"
         BASE_TAG="latest"
         docker build . -f Dockerfile.base -t $BASE_IMAGE:$BASE_TAG
         docker push $BASE_IMAGE:$BASE_TAG
@@ -29,7 +29,7 @@ jobs:
     # Build and push the server image (depends on the base image)
     - name: Build and push server image
       run: |
-        SERVER_IMAGE="ghcr.io/${{ github.repository_owner }}/terminal-server"
+        SERVER_IMAGE="ghcr.io/${{ github.repository }}/terminal-server"
         SERVER_TAG="latest"
         docker build . -f Dockerfile -t $SERVER_IMAGE:$SERVER_TAG
         docker push $SERVER_IMAGE:$SERVER_TAG
