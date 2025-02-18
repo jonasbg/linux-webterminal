@@ -30,6 +30,12 @@ Run the server in docker
 docker run -p 5001:5000 --rm -it -v /var/run/docker.sock:/var/run/docker.sock --name terminal-server terminal-server
 ```
 
+List all uniq IP addresses from your logs:
+
+```bash
+grep -hoP 'Origin IP: \K[\d\.]+' logs/*.log | sort -u
+```
+
 ## Development
 
 More details about development and setup will be added here.
