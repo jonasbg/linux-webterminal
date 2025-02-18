@@ -226,9 +226,16 @@ class TTYController:
         self.user_sessions = {}
         self.lock = Lock()
         self.logger = TTYLogger()
+        # Get limits from environment
+        self.max_containers = int(os.environ.get('MAX_CONTAINERS', 2))
+        self.container_lifetime = int(os.environ.get('CONTAINER_LIFETIME', 3600))
 
     def create_session(self, ws_id, user_id, request=None):
         with self.lock:
+            # Check if we've hit the container limit
+            if len(self.sessions) >= self.max_containers:
+                raise Exception("Maximum number of containers reached")
+
             if user_id in self.user_sessions:
                 old_ws_id = self.user_sessions[user_id]
                 self.cleanup_session(old_ws_id)
@@ -243,8 +250,16 @@ class TTYController:
                     user='1000:1000',
                     security_opt=['no-new-privileges:true'],
                     cap_drop=['ALL'],
+                    network="none",
                     mem_limit='64m',
-                    pids_limit=100,
+                    cpu_period=100000,  # Default CPU CFS period (microseconds)
+                    cpu_quota=10000,    # Only allow 10% CPU usage
+                    cpu_shares=128,     # Lower CPU priority relative to other containers
+                    ulimits=[
+                        {'name': 'cpu', 'soft': 10, 'hard': 10},  # Restrict CPU time to 10 seconds
+                        {'name': 'nproc', 'soft': 20, 'hard': 20}  # Limit number of processes even more
+                    ],
+                    pids_limit=10,
                     read_only=True,
                     tmpfs={
                         '/tmp': 'size=64m,noexec,nosuid',
@@ -289,6 +304,12 @@ class TTYController:
                     'command_complete': False
                 }
                 self.user_sessions[user_id] = ws_id
+
+                def cleanup_after_lifetime():
+                    eventlet.sleep(self.container_lifetime)
+                    self.cleanup_session(ws_id)
+
+                eventlet.spawn_n(cleanup_after_lifetime)
 
                 return container.id
 
