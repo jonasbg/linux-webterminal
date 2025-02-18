@@ -42,12 +42,12 @@ Here's a Markdown table containing the extracted environment variables, their de
 
 | Environment Variable     | Default Value | Description |
 |--------------------------|--------------|-------------|
-| `HOST`                  | `*`          | Defines the CORS allowed origins. |
-| `TTY_LOGGING_ENABLED`   | `false`      | Enables or disables logging for terminal sessions. |
-| `TTY_LOG_DIR`           | `./logs`     | Directory where session logs are stored. |
-| `MAX_CONTAINERS`        | `10`         | Maximum number of terminal containers allowed. |
-| `CONTAINER_LIFETIME`    | `3600`       | Lifetime (in seconds) before a container is automatically cleaned up. |
-| `CONTAINER_IMAGE`       | `ghcr.io/jonasbg/linux-webterminal/terminal-base:latest` | Docker image used for terminal sessions. |
+| `HOST`                   | `*`          | Defines the CORS allowed origins. |
+| `TTY_LOGGING_ENABLED`    | `false`      | Enables or disables logging for terminal sessions. |
+| `TTY_LOG_DIR`            | `./logs`     | Directory where session logs are stored. |
+| `MAX_CONTAINERS`         | `10`         | Maximum number of terminal containers allowed. |
+| `CONTAINER_LIFETIME`     | `3600`       | Lifetime (in seconds) before a container is automatically cleaned up. |
+| `CONTAINER_IMAGE`        | `ghcr.io/jonasbg/linux-webterminal/terminal-base:latest` | Docker image used for terminal sessions. |
 
 ## Development
 
