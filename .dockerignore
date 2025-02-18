@@ -2,3 +2,4 @@ Dockerfile.base
 README.md
 .venv/**
 .gitignore
+logs/**

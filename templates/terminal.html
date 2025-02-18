@@ -65,9 +65,28 @@
     </style>
 </head>
 <body>
+    <div id="motd-container"></div>
     <div id="terminal"></div>
 
     <script>
+
+        function dismissDialog() {
+            const dialog = document.getElementById('motd-dialog');
+            if (dialog) {
+                dialog.classList.add('hidden');
+                // Focus the terminal
+                if (term) {  // 'term' is your terminal instance
+                    term.focus();
+                }
+            }
+        }
+
+        fetch('/static/motd.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('motd-container').innerHTML = html;
+            });
+
         Terminal.applyAddon(fit);
 
         const term = new Terminal({
