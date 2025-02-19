@@ -32,9 +32,10 @@ RUN mkdir -p /home/termuser/"01. Linux I" && \
     chmod -R 544 /home/termuser/"01. Linux I"
 
 # Configure bash environment
-COPY --chown=termuser:termuser <<-'EOF' /home/termuser/.bashrc
+COPY --chown=root:root <<-'EOF' /home/termuser/.bashrc
 # Set restricted PATH
 export PATH=/usr/local/bin
+readonly PATH
 
 # Enable color support
 export TERM=xterm-256color
@@ -53,6 +54,22 @@ alias l='/usr/local/bin/ls -l'
 alias ..='cd ..'
 alias cls='/usr/local/bin/clear'
 EOF
+
+# Create .profile with strict PATH setting
+COPY --chown=root:root <<-'EOF' /home/termuser/.profile
+# Set restricted PATH
+export PATH=/usr/local/bin
+
+# Source .bashrc if available
+if [ -n "$BASH_VERSION" ]; then
+    if [ -f "$HOME/.bashrc" ]; then
+        . "$HOME/.bashrc"
+    fi
+fi
+EOF
+
+# Make profile files read-only
+RUN chmod 444 /home/termuser/.profile /home/termuser/.bashrc
 
 # Now secure system binaries (after all setup is complete)
 RUN chown -R root:root /bin /usr/bin /sbin /usr/sbin && \
