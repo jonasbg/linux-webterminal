@@ -41,15 +41,19 @@
             padding: 20px;
             border-radius: 15px;
             background-color: #000;
-            /* border-radius: 8px; */
             overflow: hidden;
+            position: relative; /* Add this */
         }
         .terminal-container {
             width: 100%;
             height: 100%;
+            position: relative; /* Add this */
         }
         /* Xterm specific styles */
         .xterm {
+            padding: 0;
+            margin: 0;
+            position: absolute; /* Change to absolute */
             width: 100% !important;
             height: 100% !important;
         }
@@ -57,10 +61,19 @@
             width: 100% !important;
             height: 100% !important;
             overflow-y: auto;
+            overflow-x: hidden; /* Add this */
         }
         .xterm-screen {
             width: 100% !important;
             height: 100% !important;
+            position: relative; /* Add this */
+        }
+        /* Add these new styles */
+        .xterm-scroll-area {
+            visibility: hidden;
+        }
+        .xterm-char-measure-element {
+            visibility: hidden;
         }
     </style>
 </head>
@@ -100,14 +113,38 @@
             convertEol: true,
             scrollback: 1000,
             cols: 80,
-            rows: 24
+            rows: 24,
+            // Add these new options
+            cursorStyle: 'block',
+            fastScrollModifier: 'alt',
+            scrollSensitivity: 1,
+            macOptionIsMeta: true,
+            allowTransparency: false,
+            letterSpacing: 0,
+            lineHeight: 1
         });
 
+        function fitTerminal() {
+            const terminal = document.getElementById('terminal');
+            const computedStyle = window.getComputedStyle(terminal);
+            const width = parseInt(computedStyle.getPropertyValue('width'));
+            const height = parseInt(computedStyle.getPropertyValue('height'));
+            const fontSize = 14;
+
+            // Calculate approximate columns and rows based on container size
+            const cols = Math.floor(width / (fontSize * 0.6));
+            const rows = Math.floor(height / (fontSize * 1.2));
+
+            term.resize(cols, rows);
+            term.fit();
+        }
+
         term.open(document.getElementById('terminal'));
-        term.fit();
+        fitTerminal();
 
         window.addEventListener('resize', () => {
-            term.fit();
+            clearTimeout(window.resizeTimeout);
+            window.resizeTimeout = setTimeout(fitTerminal, 250);
         });
 
         const socket = io(window.location.origin, {
