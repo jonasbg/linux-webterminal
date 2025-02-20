@@ -20,10 +20,10 @@
     <meta name="twitter:description" content="An interactive web-based terminal environment" />
     <meta name="twitter:image" content="/static/img/og_image.png" />
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/addons/fit/fit.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.min.css" integrity="sha512-XpXUuzg5afNt1bsgnrOesXP70TLH8tXYYK5sK+Y0UV+YBvJn9EfRFYWy4HT3TVDfH0nl1CO0lwOxIrt2gk9qjg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.js" integrity="sha512-Gujw5GajF5is3nMoGv9X+tCMqePLL/60qvAv1LofUZTV9jK8ENbM9L+maGmOsNzuZaiuyc/fpph1KT9uR5w3CQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js" integrity="sha512-8BHxHDLsOHx+flIrQ0DrZcea7MkHqRU5GbTHmbdzMRnAaoCIkZ97PqZcXJkKZckMMhqfoeaJE+DNUVuyoQsO3Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         body {
             margin: 0;
@@ -83,24 +83,13 @@
 
     <script>
 
-        function dismissDialog() {
-            const dialog = document.getElementById('motd-dialog');
-            if (dialog) {
-                dialog.classList.add('hidden');
-                // Focus the terminal
-                if (term) {  // 'term' is your terminal instance
-                    term.focus();
-                }
-            }
-        }
-
         fetch('/static/motd.html')
             .then(response => response.text())
             .then(html => {
                 document.getElementById('motd-container').innerHTML = html;
             });
 
-        Terminal.applyAddon(fit);
+        const fitAddon = new FitAddon.FitAddon();
 
         const term = new Terminal({
             cursorBlink: true,
@@ -114,7 +103,6 @@
             scrollback: 1000,
             cols: 80,
             rows: 24,
-            // Add these new options
             cursorStyle: 'block',
             fastScrollModifier: 'alt',
             scrollSensitivity: 1,
@@ -124,6 +112,16 @@
             lineHeight: 1
         });
 
+        term.loadAddon(fitAddon);
+
+        function dismissDialog() {
+            const dialog = document.getElementById('motd-dialog');
+            if (dialog) {
+                dialog.classList.add('hidden');
+                term?.focus();
+            }
+        }
+
         function fitTerminal() {
             const terminal = document.getElementById('terminal');
             const computedStyle = window.getComputedStyle(terminal);
@@ -131,12 +129,11 @@
             const height = parseInt(computedStyle.getPropertyValue('height'));
             const fontSize = 14;
 
-            // Calculate approximate columns and rows based on container size
             const cols = Math.floor(width / (fontSize * 0.6));
             const rows = Math.floor(height / (fontSize * 1.2));
 
             term.resize(cols, rows);
-            term.fit();
+            fitAddon.fit();
         }
 
         term.open(document.getElementById('terminal'));
