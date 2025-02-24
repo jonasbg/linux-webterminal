@@ -37,7 +37,7 @@ RUN mkdir -p /home/termuser/"02. Linux II" && \
     chown -R termuser:termuser /home/termuser/"02. Linux II"
 
 # Define the directory path as an ARG
-ARG TASK_DIR="03.Linux II_II"
+ARG TASK_DIR="03.Linux II"
 
 # Use the ARG in your commands
 RUN mkdir -p /home/termuser/"${TASK_DIR}"
