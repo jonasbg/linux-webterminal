@@ -150,40 +150,46 @@ class TTYLogger:
                     f.write(f"{cleaned_output.strip()}\n")
 
     def clean_terminal_output(self, text, command=None):
-        """Remove terminal control sequences and clean up terminal output."""
-        # Remove escape character (0x1b)
-        text = text.replace('\x1b', '')
-        # Remove bracketed paste mode sequences
-        text = text.replace('[?2004h', '').replace('[?2004l', '')
-        # Handle carriage returns properly
-        text = text.replace('\r', '\n')
+        """Remove terminal control sequences, colors, and prompt for clean log output."""
+        import re
 
-        # Remove the command echo if present
-        if command:
-            text = text.replace(command, '', 1)
+        # Strip ANSI color codes
+        # This pattern matches all ANSI escape sequences for colors
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        text = ansi_escape.sub('', text)
 
-        # Remove prompt patterns (e.g., "container_id:~$ ")
-        lines = text.split('\n')
-        cleaned_lines = []
-        for line in lines:
-            # Skip prompt lines
-            if ':~$ ' in line:
+        # Remove specific control sequences
+        text = text.replace('\x1b[6n', '')  # Remove DSR (Device Status Report)
+        text = text.replace('\x1b[J', '')   # Remove clear screen
+        text = text.replace('\x1b[K', '')   # Remove clear line
+        text = text.replace('\x07', '')     # Remove bell
+        text = text.replace('\a', '')       # Remove bell (alternative)
+        text = text.replace('\r', '\n')     # Convert carriage returns to newlines
+
+        # Remove terminal prompt lines
+        lines = []
+        for line in text.split('\n'):
+            # Skip prompt lines (matches various forms of the prompt)
+            if re.search(r'termuser@container.*\$', line):
                 continue
-            # Skip empty lines
-            if not line.strip():
-                continue
-            # Remove backspace sequences and their target characters
-            while '[K' in line:
-                idx = line.find('[K')
-                if idx > 0:  # If there's a character before [K, remove it too
-                    line = line[:idx-1] + line[idx+2:]
-                else:
-                    line = line[idx+2:]
-            cleaned_lines.append(line.strip())
+            # Remove backspace characters and the characters they erase
+            while '\b' in line:
+                line = re.sub('.\b', '', line)
+            lines.append(line)
 
-        # Join lines and remove extra whitespace
-        text = '\n'.join(cleaned_lines)
-        return text.strip()
+        # Join lines and remove any command echo if provided
+        text = '\n'.join(lines)
+        if command and command.strip():
+            # Remove the command from the beginning of the output
+            text = re.sub(r'^' + re.escape(command.strip()), '', text, flags=re.MULTILINE)
+
+        # Remove empty lines at beginning and end
+        text = text.strip()
+
+        # Collapse multiple consecutive empty lines into one
+        text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)
+
+        return text
 
 class TTYController:
     def __init__(self):
