@@ -546,7 +546,30 @@ def cleanup_all_containers(signum, frame):
                 user_id = session.get('user_id', 'unknown')
 
                 logger.info(f"Cleaning up container {container_id} for session {ws_id} (user: {user_id})")
-                # ... rest of the cleanup code ...
+
+                # Close socket connection
+                if session.get('socket'):
+                    try:
+                        session['socket']._sock.close()
+                        logger.debug(f"Closed socket for session {ws_id}")
+                    except Exception as e:
+                        logger.error(f"Error closing socket: {e}")
+
+                # Stop and remove container
+                if session.get('container'):
+                    try:
+                        session['container'].stop(timeout=1)
+                        session['container'].remove(force=True)
+                        logger.info(f"Removed container {container_id}")
+                    except Exception as e:
+                        logger.error(f"Error removing container: {e}")
+
+                # Clean up user session mapping
+                if user_id in tty_controller.user_sessions:
+                    del tty_controller.user_sessions[user_id]
+
+                # Remove session
+                del tty_controller.sessions[ws_id]
 
             except Exception as e:
                 logger.error(f"Error cleaning up session {ws_id}: {e}")
