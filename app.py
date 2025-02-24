@@ -360,7 +360,7 @@ class TTYController:
                 # First set the terminal size
                 stty_exec = self.client.api.exec_create(
                     container.id,
-                    'stty cols 300',
+                    'stty cols 142',
                     stdin=True,
                     tty=True
                 )
@@ -532,7 +532,7 @@ class TTYController:
             # Use both cols and rows in stty command
             stty_exec = self.client.api.exec_create(
                 container.id,
-                f'stty rows {rows}',
+                f'stty cols {cols}',
                 stdin=True,
                 tty=True
             )
@@ -631,7 +631,7 @@ def index():
 @socketio.on('resize')
 def handle_resize(data):
     ws_id = data.get('id')
-    cols = data.get('cols', 80)
+    cols = data.get('cols', 142)
     rows = data.get('rows', 24)
 
     if not ws_id:

@@ -67,7 +67,7 @@ git config --global color.status auto
 git config --global color.branch auto
 git config --global color.diff auto
 
-stty cols 300
+stty cols 142
 EOF
 
 # Make profile file read-only

@@ -101,7 +101,7 @@
 
         const term = new Terminal({
             cursorBlink: true,
-            fontSize: 16,
+            fontSize: 14,
             fontFamily: '"Ubuntu Mono", monospace',
             theme: {
                 background: '#000000',
@@ -138,7 +138,7 @@
             const computedStyle = window.getComputedStyle(terminal);
             const width = parseInt(computedStyle.getPropertyValue('width'));
             const height = parseInt(computedStyle.getPropertyValue('height'));
-            const fontSize = 16;
+            const fontSize = 14;
 
             const cols = Math.floor(width / (fontSize * 0.6));
             const rows = Math.floor(height / (fontSize * 1.2));
