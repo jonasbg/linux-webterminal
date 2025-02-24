@@ -176,13 +176,13 @@
             sessionId = data.id;
             term.write('Starting container...\r\n');
             socket.emit('start_session', { id: sessionId });
-            setTimeout(() => {
-                fitTerminal();
-            }, 1000);
         });
 
         socket.on('container_ready', () => {
             term.write('Container ready!\r\n\r\n');
+            setTimeout(() => {
+                fitTerminal();
+            }, 1000);
         });
 
         socket.on('output', (data) => {
