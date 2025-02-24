@@ -141,7 +141,7 @@
             const fontSize = 14;
 
             const cols = Math.floor(width / (fontSize * 0.5));
-            const rows = Math.floor(height / (fontSize * 1.2));
+            const rows = Math.floor(height / (fontSize * 1.1));
 
             term.resize(cols, rows);
             fitAddon.fit();
@@ -150,7 +150,8 @@
             if (sessionId) {
                 socket.emit('resize', {
                     id: sessionId,
-                    cols: cols
+                    cols: cols,
+                    rows: rows
                 });
             }
         }
@@ -182,7 +183,7 @@
             term.write('Container ready!\r\n\r\n');
             setTimeout(() => {
                 fitTerminal();
-            }, 1000);
+            }, 250);
         });
 
         socket.on('output', (data) => {

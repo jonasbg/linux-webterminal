@@ -532,7 +532,7 @@ class TTYController:
             # Use both cols and rows in stty command
             stty_exec = self.client.api.exec_create(
                 container.id,
-                f'stty cols {cols}',
+                f'stty cols {cols} rows {rows}',
                 stdin=True,
                 tty=True
             )
