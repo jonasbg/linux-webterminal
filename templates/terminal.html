@@ -140,7 +140,7 @@
             const height = parseInt(computedStyle.getPropertyValue('height'));
             const fontSize = 14;
 
-            const cols = Math.floor(width / (fontSize * 0.6));
+            const cols = Math.floor(width / (fontSize * 0.5));
             const rows = Math.floor(height / (fontSize * 1.2));
 
             term.resize(cols, rows);
@@ -156,7 +156,6 @@
         }
 
         term.open(document.getElementById('terminal'));
-        fitTerminal();
 
         window.addEventListener('resize', () => {
             clearTimeout(window.resizeTimeout);
@@ -171,6 +170,9 @@
 
         socket.on('connect', () => {
             term.write('Connected to terminal server...\r\n');
+            setTimeout(() => {
+                fitTerminal();
+            }, 1000);
         });
 
         socket.on('session_id', (data) => {

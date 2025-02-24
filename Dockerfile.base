@@ -62,12 +62,6 @@ alias l='/usr/local/bin/ls -l'
 alias ..='cd ..'
 alias cls='/usr/local/bin/clear'
 
-git config --global color.ui auto
-git config --global color.status auto
-git config --global color.branch auto
-git config --global color.diff auto
-
-stty cols 142
 EOF
 
 # Make profile file read-only
