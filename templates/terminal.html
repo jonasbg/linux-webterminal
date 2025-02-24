@@ -170,15 +170,15 @@
 
         socket.on('connect', () => {
             term.write('Connected to terminal server...\r\n');
-            setTimeout(() => {
-                fitTerminal();
-            }, 1000);
         });
 
         socket.on('session_id', (data) => {
             sessionId = data.id;
             term.write('Starting container...\r\n');
             socket.emit('start_session', { id: sessionId });
+            setTimeout(() => {
+                fitTerminal();
+            }, 1000);
         });
 
         socket.on('container_ready', () => {
