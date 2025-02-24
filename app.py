@@ -185,14 +185,12 @@ class TTYLogger:
 
     def log_command(self, filename, command, output):
         if not self.enabled or not filename:
-            print(f"Logging disabled, skipping command: {filename}")
             return
         cleaned_text = '\n'.join(cleaned_lines)
         return cleaned_text.strip()
 
     def log_command(self, filename, command, output):
         if not self.enabled or not filename:
-            print(f"Logging disabled, skipping command: {filename}")
             return
 
         timestamp = datetime.datetime.now().strftime('%H:%M:%S')
