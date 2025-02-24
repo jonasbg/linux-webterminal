@@ -110,32 +110,29 @@ class TTYLogger:
             self.log_dir.mkdir(exist_ok=True)
 
     def create_session_log(self, container_id, user_id, ws_id, request=None):
-        if not self.enabled:
-            return None
+            if not self.enabled:
+                return None
 
-        timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-        filename = self.log_dir / f"{timestamp}-{container_id[:12]}.log"
+            timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+            filename = self.log_dir / f"{timestamp}-{container_id[:12]}.log"
 
-        with open(filename, 'w') as f:
-            f.write(f"Session Start: {timestamp}\n")
-            f.write(f"Container ID: {container_id}\n")
-            f.write(f"User ID: {user_id}\n")
-            f.write(f"WebSocket ID: {ws_id}\n")
+            with open(filename, 'w') as f:
+                f.write(f"Session Start: {timestamp}\n")
+                f.write(f"Container ID: {container_id}\n")
+                f.write(f"User ID: {user_id}\n")
+                f.write(f"WebSocket ID: {ws_id}\n")
 
-            if request:
-                metadata = RequestMetadata.get_request_metadata(request)
-                f.write(f"Origin IP: {metadata['ip_address']} (via {metadata['ip_source']})\n")
-                f.write(f"User Agent: {metadata['user_agent']}\n")
-                # f.write("Request Headers:\n")
-                # for header, value in sorted(metadata['headers'].items()):
-                #     f.write(f"{header}: {value}\n")
-            else:
-                f.write(f"Origin IP: Not available\n")
-                f.write(f"User Agent: Not available\n")
+                if request:
+                    metadata = RequestMetadata.get_request_metadata(request)
+                    f.write(f"Origin IP: {metadata['ip_address']} (via {metadata['ip_source']})\n")
+                    f.write(f"User Agent: {metadata['user_agent']}\n")
+                else:
+                    f.write(f"Origin IP: Not available\n")
+                    f.write(f"User Agent: Not available\n")
 
-            f.write("\n=== Command History ===\n\n")
+                f.write("\n=== Command History ===\n\n")
 
-        return filename
+            return filename
 
     def log_command(self, filename, command, output):
         if not self.enabled or not filename:
@@ -145,7 +142,7 @@ class TTYLogger:
         with open(filename, 'a') as f:
             f.write(f"[{timestamp}] > {command.strip()}\n")
             if output:
-                cleaned_output = self.clean_terminal_output(output)
+                cleaned_output = self.clean_terminal_output(output, command)
                 if cleaned_output.strip():  # Only write if there's non-empty output
                     f.write(f"{cleaned_output.strip()}\n")
 
@@ -170,7 +167,7 @@ class TTYLogger:
         lines = []
         for line in text.split('\n'):
             # Skip prompt lines (matches various forms of the prompt)
-            if re.search(r'termuser@container.*\$', line):
+            if re.search(r'termuser@container.*\$', line) or re.search(r'~\$', line):
                 continue
             # Remove backspace characters and the characters they erase
             while '\b' in line:
@@ -368,34 +365,36 @@ class TTYController:
                 raise
 
     def write_to_container(self, ws_id, data):
-        if ws_id not in self.sessions:
-            raise Exception("Session not found")
+            if ws_id not in self.sessions:
+                raise Exception("Session not found")
 
-        session = self.sessions[ws_id]
-        try:
-            socket = session['socket']
-            if not socket:
-                raise Exception("Socket not connected")
+            session = self.sessions[ws_id]
+            try:
+                socket = session['socket']
+                if not socket:
+                    raise Exception("Socket not connected")
 
-            # Handle command building
-            if '\r' in data or '\n' in data:  # Enter key pressed
-                session['command_complete'] = True
-                # Store final command
-                session['final_command'] = session['current_command']
-                session['current_command'] = ''
-            elif '\x7f' in data or '\x08' in data:  # Backspace (DEL or BS)
-                if session['current_command']:
-                    session['current_command'] = session['current_command'][:-1]
-            elif data.startswith('\x1b['):  # Arrow keys or other escape sequences
-                # Don't add escape sequences to command
-                pass
-            else:
-                session['current_command'] += data
+                # Handle command building
+                if '\r' in data or '\n' in data:  # Enter key pressed
+                    # Store the complete command for reference, but don't mark as complete yet
+                    session['pending_command'] = session['current_command'].strip()
+                    session['current_command'] = ''
+                    session['output_buffer'] = ''  # Reset output buffer for new command
+                    # Start a timer to associate output with this command
+                    session['command_start_time'] = time.time()
+                elif '\x7f' in data or '\x08' in data:  # Backspace (DEL or BS)
+                    if session['current_command']:
+                        session['current_command'] = session['current_command'][:-1]
+                elif data.startswith('\x1b['):  # Arrow keys or other escape sequences
+                    # Don't add escape sequences to command
+                    pass
+                else:
+                    session['current_command'] += data
 
-            socket._sock.send(data.encode())
-        except Exception as e:
-            print(f"Error writing to container: {e}")
-            raise
+                socket._sock.send(data.encode())
+            except Exception as e:
+                logger.error(f"Error writing to container: {e}")
+                raise
 
     def read_from_container(self, ws_id):
         if ws_id not in self.sessions:
@@ -410,6 +409,8 @@ class TTYController:
             import select
             readable, _, _ = select.select([socket._sock], [], [], 0.1)
             if not readable:
+                # Check if we need to finalize previous command
+                self._check_command_timeout(ws_id, session)
                 return None
 
             data = socket._sock.recv(4096)
@@ -417,26 +418,52 @@ class TTYController:
                 return None
 
             output = data.decode('utf-8', errors='replace')
-            session['buffer'] += output
 
-            # If command was completed (enter pressed) and we have output
-            if session['command_complete'] and session['buffer']:
-                # Only log if we have a non-empty command
-                if session.get('final_command', '').strip():
-                    self.logger.log_command(
-                        session['log_file'],
-                        session['final_command'],
-                        session['buffer']
-                    )
-                # Reset for next command
-                session['final_command'] = ''
-                session['buffer'] = ''
-                session['command_complete'] = False
+            # Add output to the buffer for the current command
+            if 'output_buffer' not in session:
+                session['output_buffer'] = ''
+            session['output_buffer'] += output
+
+            # If we are tracking a pending command, check if this output contains a new prompt
+            # which indicates the command is finished executing
+            if session.get('pending_command') is not None and self._contains_prompt(output):
+                self._finalize_command(ws_id, session)
+
+            # Check for timeout even if we received data
+            self._check_command_timeout(ws_id, session)
 
             return output
         except Exception as e:
-            print(f"Error reading from container: {e}")
+            logger.error(f"Error reading from container: {e}")
             return None
+
+    def _contains_prompt(self, text):
+        """Check if the output contains a terminal prompt, indicating command completion"""
+        # Match the terminal prompt patterns
+        import re
+        return bool(re.search(r'termuser@container.*\$', text)) or bool(re.search(r'~\$', text))
+
+    def _check_command_timeout(self, ws_id, session):
+        """Check if a command has timed out and should be finalized"""
+        # If we've been waiting for output for more than 1 second, consider the command done
+        if (session.get('pending_command') is not None and
+                session.get('command_start_time') is not None and
+                time.time() - session['command_start_time'] > 1.0):
+            self._finalize_command(ws_id, session)
+
+    def _finalize_command(self, ws_id, session):
+        """Finalize a command by logging it with its output"""
+        if session.get('pending_command') is not None:
+            # Log the command and its output
+            self.logger.log_command(
+                session['log_file'],
+                session['pending_command'],
+                session['output_buffer']
+            )
+            # Reset for next command
+            session['pending_command'] = None
+            session['output_buffer'] = ''
+            session['command_start_time'] = None
 
     def cleanup_session(self, ws_id):
         with self.lock:
