@@ -137,58 +137,6 @@ class TTYLogger:
 
         return filename
 
-    def clean_terminal_output(self, text, command=None):
-        """Remove terminal control sequences while preserving cursor movement."""
-        # Don't modify cursor movement sequences
-        preserved_sequences = [
-            '\x1b[D',  # cursor left
-            '\x1b[C',  # cursor right
-            '\x1b[A',  # cursor up
-            '\x1b[B',  # cursor down
-        ]
-
-        # Only clean non-cursor sequences
-        cleaned_text = text
-        for seq in [
-            '[?2004h',  # bracketed paste mode on
-            '[?2004l',  # bracketed paste mode off
-            '\x07',    # bell
-            '\a',      # bell (alternative)
-        ]:
-            cleaned_text = cleaned_text.replace(seq, '')
-
-        # Handle command echo cleanup if needed
-        if command:
-            lines = cleaned_text.split('\n')
-            cleaned_lines = []
-            for line in lines:
-                if not line.strip().startswith(command.strip()):
-                    cleaned_lines.append(line)
-            cleaned_text = '\n'.join(cleaned_lines)
-
-        # Preserve cursor movement sequences
-        final_text = ''
-        i = 0
-        while i < len(cleaned_text):
-            found_preserved = False
-            for seq in preserved_sequences:
-                if cleaned_text[i:].startswith(seq):
-                    final_text += seq
-                    i += len(seq)
-                    found_preserved = True
-                    break
-            if not found_preserved:
-                final_text += cleaned_text[i]
-                i += 1
-
-        return final_text
-
-    def log_command(self, filename, command, output):
-        if not self.enabled or not filename:
-            return
-        cleaned_text = '\n'.join(cleaned_lines)
-        return cleaned_text.strip()
-
     def log_command(self, filename, command, output):
         if not self.enabled or not filename:
             return

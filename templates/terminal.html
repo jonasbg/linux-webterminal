@@ -9,7 +9,7 @@
     <meta property="og:title" content="Web Terminal" />
     <meta property="og:description" content="An interactive web-based terminal environment" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="htts://jonas.grimsgaard.dev" /> <!-- Add your deployment URL here -->
+    <meta property="og:url" content="https://jonas.grimsgaard.dev" /> <!-- Add your deployment URL here -->
     <meta property="og:image" content="/static/img/og_image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -80,7 +80,7 @@
         /* Ensure proper font loading */
         @supports (font-variation-settings: normal) {
             .xterm-viewport {
-                font-family: 'Fira Code VF', monospace;
+                font-family: 'Ubuntu Mono', monospace;
             }
         }
     </style>
@@ -118,7 +118,7 @@
             allowTransparency: false,
             letterSpacing: 0,
             lineHeight: 1,
-            fontLigatures: false  // Ubuntu Mono doesn't support ligatures
+            fontLigatures: false
         });
 
         term.loadAddon(fitAddon);
