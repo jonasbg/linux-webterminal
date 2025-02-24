@@ -360,7 +360,7 @@ class TTYController:
                 # First set the terminal size
                 stty_exec = self.client.api.exec_create(
                     container.id,
-                    'stty columns 80',
+                    'stty cols 300',
                     stdin=True,
                     tty=True
                 )
@@ -529,13 +529,24 @@ class TTYController:
         try:
             container = session['container']
 
+            # Use both cols and rows in stty command
             stty_exec = self.client.api.exec_create(
                 container.id,
-                f'stty columns {cols} rows {rows}',
+                f'stty rows {rows}',
                 stdin=True,
                 tty=True
             )
             self.client.api.exec_start(stty_exec['Id'])
+
+            # Also try to resize the exec instance for compatibility
+            try:
+                self.client.api.exec_resize(
+                    session['exec_id'],
+                    height=rows,
+                    width=cols
+                )
+            except Exception as e:
+                logger.debug(f"Exec resize failed (this is normal for some container runtimes): {e}")
 
         except Exception as e:
             logger.error(f"Error resizing terminal for session {ws_id}: {e}")

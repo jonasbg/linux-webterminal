@@ -24,6 +24,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.js" integrity="sha512-Gujw5GajF5is3nMoGv9X+tCMqePLL/60qvAv1LofUZTV9jK8ENbM9L+maGmOsNzuZaiuyc/fpph1KT9uR5w3CQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js" integrity="sha512-8BHxHDLsOHx+flIrQ0DrZcea7MkHqRU5GbTHmbdzMRnAaoCIkZ97PqZcXJkKZckMMhqfoeaJE+DNUVuyoQsO3Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Replace the Fira Code link with this -->
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -61,7 +63,7 @@
             width: 100% !important;
             height: 100% !important;
             overflow-y: auto;
-            overflow-x: hidden; /* Add this */
+            overflow-x: hidden;
         }
         .xterm-screen {
             width: 100% !important;
@@ -74,6 +76,12 @@
         }
         .xterm-char-measure-element {
             visibility: hidden;
+        }
+        /* Ensure proper font loading */
+        @supports (font-variation-settings: normal) {
+            .xterm-viewport {
+                font-family: 'Fira Code VF', monospace;
+            }
         }
     </style>
 </head>
@@ -94,14 +102,14 @@
         const term = new Terminal({
             cursorBlink: true,
             fontSize: 14,
-            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+            fontFamily: '"Ubuntu Mono", monospace',
             theme: {
                 background: '#000000',
                 foreground: '#ffffff'
             },
             convertEol: true,
             scrollback: 1000,
-            cols: 120,
+            cols: 142,
             rows: 24,
             cursorStyle: 'block',
             fastScrollModifier: 'alt',
@@ -109,7 +117,8 @@
             macOptionIsMeta: true,
             allowTransparency: false,
             letterSpacing: 0,
-            lineHeight: 1
+            lineHeight: 1,
+            fontLigatures: false  // Ubuntu Mono doesn't support ligatures
         });
 
         term.loadAddon(fitAddon);
@@ -141,8 +150,7 @@
             if (sessionId) {
                 socket.emit('resize', {
                     id: sessionId,
-                    cols: cols,
-                    rows: rows
+                    cols: cols
                 });
             }
         }
