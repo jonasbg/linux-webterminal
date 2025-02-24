@@ -101,7 +101,7 @@
             },
             convertEol: true,
             scrollback: 1000,
-            cols: 80,
+            cols: 120,
             rows: 24,
             cursorStyle: 'block',
             fastScrollModifier: 'alt',
@@ -122,6 +122,8 @@
             }
         }
 
+        let sessionId = null;
+
         function fitTerminal() {
             const terminal = document.getElementById('terminal');
             const computedStyle = window.getComputedStyle(terminal);
@@ -134,6 +136,15 @@
 
             term.resize(cols, rows);
             fitAddon.fit();
+
+            // Send dimensions to server
+            if (sessionId) {
+                socket.emit('resize', {
+                    id: sessionId,
+                    cols: cols,
+                    rows: rows
+                });
+            }
         }
 
         term.open(document.getElementById('terminal'));
@@ -149,8 +160,6 @@
             reconnectionAttempts: 5,
             reconnectionDelay: 1000
         });
-
-        let sessionId = null;
 
         socket.on('connect', () => {
             term.write('Connected to terminal server...\r\n');

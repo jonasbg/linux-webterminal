@@ -53,6 +53,10 @@ Here's a Markdown table containing the extracted environment variables, their de
 
 More details about development and setup will be added here.
 
+```bash
+ls Dockerfile.base | entr -s 'docker build -t terminal-base . --file Dockerfile.base'
+```
+
 ## License
 
 [Add your license information here]

@@ -138,55 +138,55 @@ class TTYLogger:
         return filename
 
     def clean_terminal_output(self, text, command=None):
-        """Remove terminal control sequences and clean up terminal output."""
-        cleaned_text = text
-
-        # Remove escape sequences (including cursor movements)
-        escaped_sequences = [
+        """Remove terminal control sequences while preserving cursor movement."""
+        # Don't modify cursor movement sequences
+        preserved_sequences = [
             '\x1b[D',  # cursor left
             '\x1b[C',  # cursor right
-            '\x1b[K',  # clear line
             '\x1b[A',  # cursor up
             '\x1b[B',  # cursor down
-            '\x08',    # backspace
-            '\x7f',    # delete
-            '\x1b',    # escape
-            '\x07',    # bell
-            '\a',      # bell (alternative representation)
         ]
 
-        for seq in escaped_sequences:
+        # Only clean non-cursor sequences
+        cleaned_text = text
+        for seq in [
+            '[?2004h',  # bracketed paste mode on
+            '[?2004l',  # bracketed paste mode off
+            '\x07',    # bell
+            '\a',      # bell (alternative)
+        ]:
             cleaned_text = cleaned_text.replace(seq, '')
 
-        # Remove bracketed paste mode sequences
-        cleaned_text = cleaned_text.replace('[?2004h', '').replace('[?2004l', '')
-
-        # Handle carriage returns properly
-        cleaned_text = cleaned_text.replace('\r', '\n')
-
-        # Remove duplicate command echoes
+        # Handle command echo cleanup if needed
         if command:
-            # Remove all instances of the command
-            parts = cleaned_text.split('\n')
-            cleaned_parts = []
-            for part in parts:
-                if not part.strip().startswith(command.strip()):
-                    cleaned_parts.append(part)
-            cleaned_text = '\n'.join(cleaned_parts)
+            lines = cleaned_text.split('\n')
+            cleaned_lines = []
+            for line in lines:
+                if not line.strip().startswith(command.strip()):
+                    cleaned_lines.append(line)
+            cleaned_text = '\n'.join(cleaned_lines)
 
-        # Split into lines and clean each line
-        lines = cleaned_text.split('\n')
-        cleaned_lines = []
-        for line in lines:
-            # Skip prompt lines
-            if ':~$ ' in line or line.endswith('$ '):
-                continue
-            # Skip empty lines
-            if not line.strip():
-                continue
-            cleaned_lines.append(line.strip())
+        # Preserve cursor movement sequences
+        final_text = ''
+        i = 0
+        while i < len(cleaned_text):
+            found_preserved = False
+            for seq in preserved_sequences:
+                if cleaned_text[i:].startswith(seq):
+                    final_text += seq
+                    i += len(seq)
+                    found_preserved = True
+                    break
+            if not found_preserved:
+                final_text += cleaned_text[i]
+                i += 1
 
-        # Join lines and remove extra whitespace
+        return final_text
+
+    def log_command(self, filename, command, output):
+        if not self.enabled or not filename:
+            print(f"Logging disabled, skipping command: {filename}")
+            return
         cleaned_text = '\n'.join(cleaned_lines)
         return cleaned_text.strip()
 
@@ -357,9 +357,19 @@ class TTYController:
                     }
                 )
 
+                # First set the terminal size
+                stty_exec = self.client.api.exec_create(
+                    container.id,
+                    'stty columns 80',
+                    stdin=True,
+                    tty=True
+                )
+                self.client.api.exec_start(stty_exec['Id'])
+
+                # Then start the shell
                 exec_create = self.client.api.exec_create(
                     container.id,
-                    '/usr/local/bin/bash -l',
+                    '/usr/local/bin/sh -l',
                     stdin=True,
                     tty=True
                 )
@@ -511,12 +521,33 @@ class TTYController:
                     del self.sessions[ws_id]
                     logger.info(f"Session {ws_id} cleanup completed")
 
+    def resize_terminal(self, ws_id, cols, rows):
+        if ws_id not in self.sessions:
+            raise Exception("Session not found")
+
+        session = self.sessions[ws_id]
+        try:
+            container = session['container']
+
+            stty_exec = self.client.api.exec_create(
+                container.id,
+                f'stty columns {cols} rows {rows}',
+                stdin=True,
+                tty=True
+            )
+            self.client.api.exec_start(stty_exec['Id'])
+
+        except Exception as e:
+            logger.error(f"Error resizing terminal for session {ws_id}: {e}")
+            raise
+
     def _get_docker_client(self):
         # Try different Docker socket locations
         socket_paths = [
             'unix:///var/run/docker.sock',  # Standard Docker socket
             'unix://' + os.path.expanduser('~') + '/.colima/docker.sock',  # Colima socket
             'unix:///run/podman/podman.sock',  # Podman socket
+            'unix:///run/user/1000/podman/podman.sock'
         ]
 
         for socket_path in socket_paths:
@@ -585,6 +616,21 @@ def cleanup_all_containers(signum, frame):
 @app.route('/')
 def index():
     return render_template('terminal.html')
+
+@socketio.on('resize')
+def handle_resize(data):
+    ws_id = data.get('id')
+    cols = data.get('cols', 80)
+    rows = data.get('rows', 24)
+
+    if not ws_id:
+        return
+
+    try:
+        tty_controller.resize_terminal(ws_id, cols, rows)
+    except Exception as e:
+        print(f"Error handling resize: {e}")
+        emit('error', {'error': str(e)})
 
 @socketio.on('connect')
 def handle_connect():
