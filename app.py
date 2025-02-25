@@ -553,6 +553,435 @@ class TTYController:
 
         raise Exception("Could not connect to any Docker socket")
 
+    def create_shell(self, ws_id, tab_id, user_id, request=None):
+        """Create a new shell in an existing container session"""
+        with self.lock:
+            logger.info(f"Creating new shell for session {ws_id} (tab: {tab_id}, user: {user_id})")
+
+            if ws_id not in self.sessions:
+                logger.error(f"Session {ws_id} not found")
+                raise Exception(f"Session not found: {ws_id}")
+
+            session = self.sessions[ws_id]
+            container = session.get('container')
+
+            if not container:
+                logger.error(f"Container not found in session {ws_id}")
+                raise Exception("Container not found in session")
+
+            try:
+                # First set the terminal size
+                stty_exec = self.client.api.exec_create(
+                    container.id,
+                    'stty cols 142',
+                    stdin=True,
+                    tty=True
+                )
+                self.client.api.exec_start(stty_exec['Id'])
+
+                # Create a new shell process
+                exec_create = self.client.api.exec_create(
+                    container.id,
+                    '/usr/local/bin/sh -l',
+                    stdin=True,
+                    tty=True
+                )
+
+                exec_socket = self.client.api.exec_start(
+                    exec_create['Id'],
+                    socket=True,
+                    tty=True
+                )
+
+                # Generate a unique shell ID
+                shell_id = f"shell-{uuid.uuid4()}"
+
+                # Create log file for the shell
+                log_file = self.logger.create_session_log(
+                    container.id,
+                    user_id,
+                    shell_id,
+                    request
+                )
+
+                # If session doesn't have a shells dictionary, create one
+                if 'shells' not in session:
+                    session['shells'] = {}
+
+                # Add the new shell to the session
+                session['shells'][shell_id] = {
+                    'exec_id': exec_create['Id'],
+                    'socket': exec_socket,
+                    'tab_id': tab_id,
+                    'log_file': log_file,
+                    'current_command': '',
+                    'buffer': '',
+                    'command_complete': False
+                }
+
+                logger.info(f"Shell {shell_id} created successfully for session {ws_id}")
+                return shell_id
+
+            except Exception as e:
+                logger.error(f"Failed to create shell for session {ws_id}: {e}")
+                raise
+
+    def _check_shell_command_timeout(self, ws_id, shell_id, shell):
+        """Check if a command in a shell has timed out and should be finalized"""
+        # If we've been waiting for output for more than 1 second, consider the command done
+        if (shell.get('pending_command') is not None and
+                shell.get('command_start_time') is not None and
+                time.time() - shell.get('command_start_time') > 1.0):
+            self._finalize_shell_command(ws_id, shell_id, shell)
+
+    def _finalize_shell_command(self, ws_id, shell_id, shell):
+        """Finalize a command in a shell by logging it with its output"""
+        if shell.get('pending_command') is not None:
+            # Log the command and its output
+            self.logger.log_command(
+                shell.get('log_file'),
+                shell.get('pending_command'),
+                shell.get('output_buffer')
+            )
+            # Reset for next command
+            shell['pending_command'] = None
+            shell['output_buffer'] = ''
+            shell['command_start_time'] = None
+
+    def resize_shell(self, ws_id, shell_id, cols, rows):
+        """Resize a specific shell in a session"""
+        if ws_id not in self.sessions:
+            raise Exception("Session not found")
+
+        session = self.sessions[ws_id]
+
+        if 'shells' not in session or shell_id not in session['shells']:
+            raise Exception("Shell not found")
+
+        shell = session['shells'][shell_id]
+        container = session['container']
+
+        try:
+            # Use both cols and rows in stty command
+            stty_exec = self.client.api.exec_create(
+                container.id,
+                f'stty cols {cols} rows {rows}',
+                stdin=True,
+                tty=True
+            )
+            self.client.api.exec_start(stty_exec['Id'])
+
+            # Also try to resize the exec instance for compatibility
+            try:
+                self.client.api.exec_resize(
+                    shell['exec_id'],
+                    height=rows,
+                    width=cols
+                )
+            except Exception as e:
+                logger.debug(f"Exec resize failed (this is normal for some container runtimes): {e}")
+
+        except Exception as e:
+            logger.error(f"Error resizing shell {shell_id}: {e}")
+            raise
+
+    def close_shell(self, ws_id, shell_id):
+        """Close a specific shell in a session"""
+        with self.lock:
+            if ws_id not in self.sessions:
+                logger.warning(f"Session {ws_id} not found when closing shell {shell_id}")
+                return
+
+            session = self.sessions[ws_id]
+
+            if 'shells' not in session or shell_id not in session['shells']:
+                logger.warning(f"Shell {shell_id} not found in session {ws_id}")
+                return
+
+            shell = session['shells'][shell_id]
+            container = session.get('container')
+
+            try:
+                logger.info(f"Closing shell {shell_id} in session {ws_id}")
+
+                # First try to terminate the shell gracefully
+                if shell.get('socket'):
+                    try:
+                        # Send Ctrl+D (EOF) followed by exit command
+                        shell['socket']._sock.send(b'\x04')
+                        time.sleep(0.1)
+                        shell['socket']._sock.send(b'exit\r\n')
+                        time.sleep(0.1)
+
+                        # Close the socket
+                        shell['socket']._sock.close()
+                        logger.debug(f"Closed socket for shell {shell_id}")
+                    except Exception as e:
+                        logger.error(f"Error closing socket for shell {shell_id}: {e}")
+
+                # If we have exec_id, try to forcefully terminate if possible
+                if container and shell.get('exec_id'):
+                    try:
+                        # Try to execute a ps command to find and kill the shell process
+                        kill_exec = self.client.api.exec_create(
+                            container.id,
+                            "pkill -P $(ps -o pid= -p $(ps -o ppid= -p $$))",
+                            stdin=False,
+                            tty=True
+                        )
+                        self.client.api.exec_start(kill_exec['Id'])
+                    except Exception as e:
+                        logger.error(f"Error terminating process for shell {shell_id}: {e}")
+
+                # Remove shell from session
+                del session['shells'][shell_id]
+                logger.info(f"Shell {shell_id} closed successfully")
+
+            except Exception as e:
+                logger.error(f"Error closing shell {shell_id}: {e}")
+    # Modified version of create_session to support shells
+    def create_session_with_shells(self, ws_id, user_id, request=None):
+        """Create a new session with support for multiple shells"""
+        with self.lock:
+            logger.info(f"Creating new session for user {user_id} (ws_id: {ws_id})")
+
+            # Check if we've hit the container limit
+            if len(self.sessions) >= self.max_containers:
+                logger.warning(f"Maximum container limit ({self.max_containers}) reached")
+                raise Exception("Maximum number of containers reached")
+
+            if user_id in self.user_sessions:
+                old_ws_id = self.user_sessions[user_id]
+                logger.info(f"User {user_id} has existing session {old_ws_id}, cleaning up")
+                self.cleanup_session(old_ws_id)
+
+            try:
+                image = os.environ.get('CONTAINER_IMAGE', 'ghcr.io/jonasbg/linux-webterminal/terminal-base:latest')
+                logger.info(f"Starting container with image: {image}")
+                container = self.client.containers.run(
+                    image,
+                    detach=True,
+                    tty=True,
+                    stdin_open=True,
+                    remove=True,
+                    user='1000:1000',
+                    labels={
+                        'app': 'web-terminal',
+                        'ws_id': ws_id,
+                        'user_id': user_id,
+                        'io.containers.autoupdate': 'image'
+                    },
+                    security_opt=[
+                        'no-new-privileges:true',
+                        "mask=/proc/cpuinfo",
+                        "mask=/proc/meminfo",
+                        "mask=/proc/diskstats",
+                        "mask=/proc/modules",
+                        "mask=/proc/kallsyms",
+                        "mask=/proc/keys",
+                        "mask=/proc/drivers",
+                        "mask=/proc/net",
+                        "mask=/proc/asound",
+                        "mask=/proc/key-users",
+                        "mask=/proc/slabinfo",
+                        "mask=/proc/uptime",
+                        "mask=/proc/stat",
+                        "mask=/proc/zoneinfo",
+                        "mask=/proc/vmallocinfo",
+                        "mask=/proc/mounts",
+                        "mask=/proc/kpageflags",
+                        "mask=/proc/kpagecount",
+                        "mask=/proc/kpagecgroup",
+                        "mask=/proc/scsi",
+                        "mask=/proc/buddyinfo",
+                        "mask=/proc/pagetypeinfo",
+                        "mask=/proc/ioports",
+                        "mask=/proc/iomem",
+                        "mask=/proc/interrupts",
+                        "mask=/proc/softirqs",
+                        "mask=/proc/dma",
+                        "mask=/proc/uptime"
+                    ],
+                    cap_drop=['ALL'],
+                    network="none",
+                    mem_limit='64m',
+                    cpu_period=100000,
+                    cpu_quota=10000,
+                    cpu_shares=128,
+                    ulimits=[
+                        {'name': 'cpu', 'soft': 10, 'hard': 10},
+                        {'name': 'nproc', 'soft': 20, 'hard': 20}
+                    ],
+                    pids_limit=10,
+                    read_only=True,
+                    tmpfs={
+                        '/tmp': 'size=64m,noexec,nosuid',
+                        '/home': 'size=64m,exec'
+                    },
+                    environment={
+                        "TERM": "xterm",
+                        "PS1": "\\w \\$ ",
+                        "HOME": "/home/termuser",
+                        "PATH": "/usr/local/bin",
+                    }
+                )
+
+                # Initialize the session with container and user info
+                self.sessions[ws_id] = {
+                    'container': container,
+                    'user_id': user_id,
+                    'shells': {}
+                }
+                self.user_sessions[user_id] = ws_id
+
+                # Create the main shell for this container
+                shell_id = self.create_shell(ws_id, 'initial', user_id, request)
+
+                # Store the main shell ID
+                self.sessions[ws_id]['main_shell_id'] = shell_id
+
+                def cleanup_after_lifetime():
+                    eventlet.sleep(self.container_lifetime)
+                    self.cleanup_session(ws_id)
+
+                eventlet.spawn_n(cleanup_after_lifetime)
+
+                logger.info(f"Container {container.id[:12]} created successfully for user {user_id}")
+                return container.id, shell_id
+
+            except Exception as e:
+                logger.error(f"Failed to create container for user {user_id}: {e}")
+                if ws_id in self.sessions:
+                    self.cleanup_session(ws_id)
+                raise
+
+    # Modified cleanup_session to handle shells
+    def cleanup_session_with_shells(self, ws_id):
+        with self.lock:
+            if ws_id in self.sessions:
+                session = self.sessions[ws_id]
+                user_id = session.get('user_id')
+                container_id = session.get('container').id[:12] if session.get('container') else 'unknown'
+
+                logger.info(f"Cleaning up session {ws_id} for user {user_id} (container: {container_id})")
+
+                try:
+                    # Close all shell sockets
+                    if 'shells' in session:
+                        for shell_id, shell in list(session['shells'].items()):
+                            try:
+                                if shell.get('socket'):
+                                    shell['socket']._sock.close()
+                                    logger.debug(f"Closed socket for shell {shell_id}")
+                            except Exception as e:
+                                logger.error(f"Error closing socket for shell {shell_id}: {e}")
+
+                    if session.get('container'):
+                        try:
+                            session['container'].stop(timeout=1)
+                            session['container'].remove(force=True)
+                            logger.info(f"Removed container {container_id}")
+                        except Exception as e:
+                            logger.error(f"Error removing container {container_id}: {e}")
+
+                    if user_id and user_id in self.user_sessions:
+                        del self.user_sessions[user_id]
+                        logger.info(f"Removed user session mapping for {user_id}")
+
+                except Exception as e:
+                    logger.error(f"Error in cleanup for session {ws_id}: {e}")
+                finally:
+                    del self.sessions[ws_id]
+                    logger.info(f"Session {ws_id} cleanup completed")
+
+    def write_to_shell(self, ws_id, shell_id, data):
+        """Write data to a specific shell in a session"""
+        if ws_id not in self.sessions:
+            raise Exception("Session not found")
+
+        session = self.sessions[ws_id]
+
+        if 'shells' not in session or shell_id not in session['shells']:
+            raise Exception("Shell not found")
+
+        shell = session['shells'][shell_id]
+
+        try:
+            socket = shell['socket']
+            if not socket:
+                raise Exception("Socket not connected")
+
+            # Handle command building for logging
+            if '\r' in data or '\n' in data:  # Enter key pressed
+                # Store the complete command for reference, but don't mark as complete yet
+                shell['pending_command'] = shell['current_command'].strip()
+                shell['current_command'] = ''
+                shell['output_buffer'] = ''  # Reset output buffer for new command
+                # Start a timer to associate output with this command
+                shell['command_start_time'] = time.time()
+            elif '\x7f' in data or '\x08' in data:  # Backspace (DEL or BS)
+                if shell['current_command']:
+                    shell['current_command'] = shell['current_command'][:-1]
+            elif data.startswith('\x1b['):  # Arrow keys or other escape sequences
+                # Don't add escape sequences to command
+                pass
+            else:
+                shell['current_command'] += data
+
+            socket._sock.send(data.encode())
+        except Exception as e:
+            logger.error(f"Error writing to shell {shell_id}: {e}")
+            raise
+
+    def read_from_shell(self, ws_id, shell_id):
+        """Read data from a specific shell in a session"""
+        if ws_id not in self.sessions:
+            return None
+
+        session = self.sessions[ws_id]
+
+        if 'shells' not in session or shell_id not in session['shells']:
+            return None
+
+        shell = session['shells'][shell_id]
+
+        try:
+            socket = shell['socket']
+            if not socket:
+                return None
+
+            import select
+            readable, _, _ = select.select([socket._sock], [], [], 0.1)
+            if not readable:
+                # Check if we need to finalize previous command
+                self._check_shell_command_timeout(ws_id, shell_id, shell)
+                return None
+
+            data = socket._sock.recv(4096)
+            if not data:
+                return None
+
+            output = data.decode('utf-8', errors='replace')
+
+            # Add output to the buffer for the current command
+            if 'output_buffer' not in shell:
+                shell['output_buffer'] = ''
+            shell['output_buffer'] += output
+
+            # If we are tracking a pending command, check if this output contains a new prompt
+            # which indicates the command is finished executing
+            if shell.get('pending_command') is not None and self._contains_prompt(output):
+                self._finalize_shell_command(ws_id, shell_id, shell)
+
+            # Check for timeout even if we received data
+            self._check_shell_command_timeout(ws_id, shell_id, shell)
+
+            return output
+        except Exception as e:
+            logger.error(f"Error reading from shell {shell_id}: {e}")
+            return None
+
+
 tty_controller = TTYController()
 
 def cleanup_all_containers(signum, frame):
@@ -569,7 +998,17 @@ def cleanup_all_containers(signum, frame):
 
                 logger.info(f"Cleaning up container {container_id} for session {ws_id} (user: {user_id})")
 
-                # Close socket connection
+                # Clean up all shells
+                if 'shells' in session:
+                    for shell_id, shell in list(session['shells'].items()):
+                        try:
+                            if shell.get('socket'):
+                                shell['socket']._sock.close()
+                                logger.debug(f"Closed socket for shell {shell_id}")
+                        except Exception as e:
+                            logger.error(f"Error closing shell socket: {e}")
+
+                # Clean up main socket if it exists (for backward compatibility)
                 if session.get('socket'):
                     try:
                         session['socket']._sock.close()
@@ -608,21 +1047,6 @@ def cleanup_all_containers(signum, frame):
 def index():
     return render_template('terminal.html')
 
-@socketio.on('resize')
-def handle_resize(data):
-    ws_id = data.get('id')
-    cols = data.get('cols', 142)
-    rows = data.get('rows', 24)
-
-    if not ws_id:
-        return
-
-    try:
-        tty_controller.resize_terminal(ws_id, cols, rows)
-    except Exception as e:
-        print(f"Error handling resize: {e}")
-        emit('error', {'error': str(e)})
-
 @socketio.on('connect')
 def handle_connect():
     ws_id = str(uuid.uuid4())
@@ -636,15 +1060,18 @@ def handle_start_session(data):
     ws_id = data['id']
     user_id = request.sid
     try:
+        # Use the original create_session to maintain compatibility
         container_id = tty_controller.create_session(ws_id, user_id, request)
         print(f"Created container {container_id} for session {ws_id} (user: {user_id})")
 
+        # Start the original read loop
         def read_output(ws_id, user_id):
             with app.app_context():
                 while True:
                     try:
                         output = tty_controller.read_from_container(ws_id)
                         if output:
+                            # Emit as both the traditional way and the new shell way
                             socketio.emit('output', {'output': output}, room=user_id)
                     except Exception as e:
                         print(f"Error in read loop: {e}")
@@ -652,10 +1079,92 @@ def handle_start_session(data):
                     socketio.sleep(0.05)
 
         socketio.start_background_task(read_output, ws_id, user_id)
-        emit('container_ready')
 
+        # Send the container ready event
+        emit('container_ready')
     except Exception as e:
         print(f"Error creating session: {e}")
+        emit('error', {'error': str(e)})
+
+@socketio.on('create_shell')
+def handle_create_shell(data):
+    containerId = data.get('containerId')  # This is the ws_id
+    tab_id = data.get('tabId')
+    user_id = request.sid
+
+    if not containerId or not tab_id:
+        emit('error', {'error': 'Missing containerId (ws_id) or tab ID'})
+        return
+
+    try:
+        shell_id = tty_controller.create_shell(containerId, tab_id, user_id, request)
+        emit('shell_created', {'tabId': tab_id, 'shellId': shell_id})
+
+        def read_shell_output(ws_id, shell_id, user_id):
+            with app.app_context():
+                while True:
+                    try:
+                        output = tty_controller.read_from_shell(ws_id, shell_id)
+                        if output:
+                            socketio.emit('shell_output', {
+                                'shellId': shell_id,
+                                'output': output
+                            }, room=user_id)
+                    except Exception as e:
+                        print(f"Error in shell read loop: {e}")
+                        break
+                    socketio.sleep(0.05)
+
+        socketio.start_background_task(read_shell_output, containerId, shell_id, user_id)
+
+    except Exception as e:
+        print(f"Error creating shell: {e}")
+        emit('error', {'error': str(e)})
+
+@socketio.on('shell_input')
+def handle_shell_input(data):
+    containerId = data.get('containerId')  # This is the ws_id
+    shell_id = data.get('shellId')
+    user_input = data.get('input')
+
+    if not containerId or not shell_id or not user_input:
+        return
+
+    try:
+        tty_controller.write_to_shell(containerId, shell_id, user_input)
+    except Exception as e:
+        print(f"Error handling shell input: {e}")
+        emit('error', {'error': str(e)})
+
+@socketio.on('resize_shell')
+def handle_resize_shell(data):
+    containerId = data.get('containerId')  # This is the ws_id
+    shell_id = data.get('shellId')
+    cols = data.get('cols', 142)
+    rows = data.get('rows', 24)
+
+    if not containerId or not shell_id:
+        return
+
+    try:
+        tty_controller.resize_shell(containerId, shell_id, cols, rows)
+    except Exception as e:
+        print(f"Error handling shell resize: {e}")
+        emit('error', {'error': str(e)})
+
+@socketio.on('close_shell')
+def handle_close_shell(data):
+    containerId = data.get('containerId')  # This is the ws_id
+    shell_id = data.get('shellId')
+    user_id = request.sid  # Get the user ID from the request
+
+    if not containerId or not shell_id:
+        return
+
+    try:
+        tty_controller.close_shell(containerId, shell_id)  # Removed the user_id parameter
+    except Exception as e:
+        print(f"Error closing shell: {e}")
         emit('error', {'error': str(e)})
 
 @socketio.on('input')
@@ -672,12 +1181,28 @@ def handle_input(data):
         print(f"Error handling input: {e}")
         emit('error', {'error': str(e)})
 
+@socketio.on('resize')
+def handle_resize(data):
+    ws_id = data.get('id')
+    cols = data.get('cols', 142)
+    rows = data.get('rows', 24)
+
+    if not ws_id:
+        return
+
+    try:
+        tty_controller.resize_terminal(ws_id, cols, rows)
+    except Exception as e:
+        print(f"Error handling resize: {e}")
+        emit('error', {'error': str(e)})
+
 @socketio.on('disconnect')
 def handle_disconnect():
     user_id = request.sid
     print(f"Client disconnected (user: {user_id})")
     if user_id in tty_controller.user_sessions:
         ws_id = tty_controller.user_sessions[user_id]
+        # Use the original cleanup method
         tty_controller.cleanup_session(ws_id)
 
 signal.signal(signal.SIGINT, cleanup_all_containers)
