@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Terminal</title>
+    <!-- Add favicon links -->
+    <link rel="icon" type="image/x-icon" href="/static/img/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-touch-icon.png">
+    <!-- Add OpenGraph tags right after title -->
+    <meta property="og:title" content="Web Terminal" />
+    <meta property="og:description" content="An interactive web-based terminal environment" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://jonas.grimsgaard.dev" />
+    <meta property="og:image" content="/static/img/og_image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Web Terminal" />
+    <!-- Add Twitter Card tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Web Terminal" />
+    <meta name="twitter:description" content="An interactive web-based terminal environment" />
+    <meta name="twitter:image" content="/static/img/og_image.png" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.min.css" integrity="sha512-XpXUuzg5afNt1bsgnrOesXP70TLH8tXYYK5sK+Y0UV+YBvJn9EfRFYWy4HT3TVDfH0nl1CO0lwOxIrt2gk9qjg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.js" integrity="sha512-Gujw5GajF5is3nMoGv9X+tCMqePLL/60qvAv1LofUZTV9jK8ENbM9L+maGmOsNzuZaiuyc/fpph1KT9uR5w3CQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Add Font Awesome for tab icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --terminal-bg: #000;
+            --tab-active-bg: #000;
+            --tab-inactive-bg: #2a2a2a;
+            --text-color: #fff;
+            --border-color: #444;
+            --primary-color: #4a9eff;
+            --hover-color: #357abd;
+            --font-mono: 'Ubuntu Mono', monospace;
+            --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+            --border-radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            min-height: 100vh;
+            font-family: var(--font-ui);
+            color: var(--text-color);
+        }
+
+        .terminal-app {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            display: flex;
+            background-color: var(--bg-color);
+            padding: 8px 8px 0 8px;
+            border-bottom: 1px solid var(--border-color);
+            height: 40px;
+            user-select: none;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--tab-inactive-bg);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            padding: 8px 16px;
+            cursor: pointer;
+            margin-right: 4px;
+            transition: background 0.2s;
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            white-space: nowrap;
+            max-width: 180px;
+        }
+
+        .tab.active {
+            background-color: var(--tab-active-bg);
+            border-bottom: 1px solid var(--tab-active-bg);
+            margin-bottom: -1px;
+        }
+
+        .tab:hover:not(.active) {
+            background-color: #333;
+        }
+
+        .tab-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tab-close {
+            margin-left: 4px;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            visibility: hidden;
+        }
+
+        .tab:hover .tab-close {
+            visibility: visible;
+        }
+
+        .tab-close:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .new-tab-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background-color: transparent;
+            border: none;
+            color: var(--text-color);
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            transition: background 0.2s;
+        }
+
+        .new-tab-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Terminal Container */
+        .terminals-container {
+            position: relative;
+            flex: 1;
+            background-color: var(--terminal-bg);
+            overflow: hidden;
+        }
+
+        .terminal-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .terminal-container.active {
+            display: block;
+        }
+
+        /* Xterm specific styles */
+        .xterm {
+            padding: 10px;
+            position: absolute;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .xterm-viewport {
+            width: 100% !important;
+            height: 100% !important;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .xterm-screen {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .xterm-scroll-area {
+            visibility: hidden;
+        }
+
+        .xterm-char-measure-element {
+            visibility: hidden;
+        }
+
+        /* MOTD dialog */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.75);
+            z-index: 100;
+        }
+
+        .dialog-content {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-color);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            z-index: 101;
+            color: var(--text-color);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .dialog-content h2 {
+            margin: 0 0 1.5rem 0;
+            font-size: 1.5rem;
+            color: var(--text-color);
+        }
+
+        .dialog-body {
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .dialog-body p {
+            margin: 1rem 0;
+        }
+
+        .dialog-body ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .dialog-body li {
+            margin: 0.5rem 0;
+        }
+
+        .dialog-button {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--primary-color);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .dialog-button:hover {
+            background: var(--hover-color);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        strong {
+            color: var(--primary-color);
+        }
+
+        .tab-loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+    <div id="motd-container"></div>
+    <div class="terminal-app">
+        <div class="tab-bar">
+            <!-- Tabs will be dynamically added here -->
+            <button class="new-tab-btn" id="new-tab-btn" title="New Terminal Tab">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+        <div class="terminals-container">
+            <!-- Terminal containers will be dynamically added here -->
+        </div>
+    </div>
+
+    <script>
+        // Fetch and display the welcome message
+        fetch('/static/motd.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('motd-container').innerHTML = html;
+            });
+
+        // Dismiss welcome dialog
+        function dismissDialog() {
+            const dialog = document.getElementById('motd-dialog');
+            if (dialog) {
+                dialog.classList.add('hidden');
+                if (activeTerminal) {
+                    activeTerminal.term.focus();
+                }
+            }
+        }
+
+        // Replace the Socket.IO connection with WebSocket
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
+        const socket = new WebSocket(wsUrl);
+
+        // Replace socket.emit with socket.send
+        function sendMessage(type, data) {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: type,
+                    ...data
+                }));
+            }
+        }
+
+        // Global variables
+        let sessionId = null;  // This is the ws_id
+        let activeTerminal = null;
+        let terminals = [];
+        let tabCounter = 0;
+        const tabBar = document.querySelector('.tab-bar');
+        const terminalsContainer = document.querySelector('.terminals-container');
+        const newTabBtn = document.getElementById('new-tab-btn');
+
+        // Terminal class to manage each terminal instance
+        class TerminalTab {
+            constructor(id, isFirstTab = false) {
+                this.id = id;
+                this.tabId = `tab-${tabCounter++}`;
+                this.term = null;
+                this.fitAddon = null;
+                this.shellId = null;
+                this.isFirstTab = isFirstTab;
+                this.isReady = false;
+                this.creating = false;
+
+                this.createTerminalElements();
+                this.initializeTerminal();
+
+                if (isFirstTab) {
+                    // First tab will connect directly to the container's main shell
+                    this.term.write('Waiting for container...\r\n');
+                } else {
+                    this.createNewShell();
+                }
+            }
+
+            createTerminalElements() {
+                // Create tab element
+                this.tabElement = document.createElement('div');
+                this.tabElement.className = 'tab';
+                this.tabElement.dataset.tabId = this.tabId;
+                this.tabElement.innerHTML = `
+                    <i class="fa-solid fa-terminal"></i>
+                    <span class="tab-name">Terminal ${tabCounter}</span>
+                    <span class="tab-close"><i class="fa-solid fa-xmark"></i></span>
+                `;
+
+                // Create terminal container
+                this.containerElement = document.createElement('div');
+                this.containerElement.className = 'terminal-container';
+                this.containerElement.dataset.tabId = this.tabId;
+
+                // Insert elements into DOM
+                tabBar.insertBefore(this.tabElement, newTabBtn);
+                terminalsContainer.appendChild(this.containerElement);
+
+                // Add event listeners
+                this.tabElement.addEventListener('click', (e) => {
+                    if (e.target.closest('.tab-close')) {
+                        this.close();
+                    } else {
+                        this.activate();
+                    }
+                });
+            }
+
+            initializeTerminal() {
+                this.fitAddon = new FitAddon.FitAddon();
+                this.term = new Terminal({
+                    cursorBlink: true,
+                    fontSize: 14,
+                    fontFamily: '"Ubuntu Mono", monospace',
+                    theme: {
+                        background: '#000000',
+                        foreground: '#ffffff'
+                    },
+                    convertEol: true,
+                    scrollback: 1000,
+                    cols: 142,
+                    rows: 24,
+                    cursorStyle: 'block',
+                    fastScrollModifier: 'alt',
+                    scrollSensitivity: 1,
+                    macOptionIsMeta: true,
+                    allowTransparency: false,
+                    letterSpacing: 0,
+                    lineHeight: 1,
+                    fontLigatures: false
+                });
+
+                this.term.loadAddon(this.fitAddon);
+                this.term.open(this.containerElement);
+
+                // Handle terminal input
+                this.term.onData((data) => {
+                    if (sessionId) {
+                        if (this.isFirstTab) {
+                            sendMessage('input', {
+                                id: sessionId,
+                                input: data
+                            });
+                        } else if (this.shellId) {
+                            sendMessage('shell_input', {
+                                containerId: sessionId,
+                                shellId: this.shellId,
+                                input: data
+                            });
+                        }
+                    }
+                });
+            }
+
+            createNewShell() {
+                if (!sessionId) {
+                    this.term.write('Error: No active session\r\n');
+                    return;
+                }
+
+                this.setLoading(true);
+                this.term.write('Creating new shell...\r\n');
+                this.creating = true;
+
+                sendMessage('create_shell', {
+                    containerId: sessionId,
+                    tabId: this.tabId
+                });
+            }
+
+            fitTerminal() {
+                if (!this.term || !this.fitAddon) return;
+
+                try {
+                    const termRect = this.containerElement.getBoundingClientRect();
+                    const width = termRect.width;
+                    const height = termRect.height;
+                    const fontSize = 14;
+
+                    const cols = Math.floor(width / (fontSize * 0.5));
+                    const rows = Math.floor(height / (fontSize * 1.1));
+
+                    this.term.resize(cols, rows);
+                    this.fitAddon.fit();
+
+                    // Send resize event
+                    if (this.isFirstTab) {
+                        sendMessage('resize', {
+                            id: sessionId,
+                            cols: cols,
+                            rows: rows
+                        });
+                    } else if (this.shellId) {
+                        sendMessage('resize_shell', {
+                            containerId: sessionId,
+                            shellId: this.shellId,
+                            cols: cols,
+                            rows: rows
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error fitting terminal:', e);
+                }
+            }
+
+            activate() {
+                if (activeTerminal === this) return;
+
+                // Deactivate current terminal
+                if (activeTerminal) {
+                    activeTerminal.tabElement.classList.remove('active');
+                    activeTerminal.containerElement.classList.remove('active');
+                }
+
+                // Activate this terminal
+                this.tabElement.classList.add('active');
+                this.containerElement.classList.add('active');
+                activeTerminal = this;
+
+                // Focus and fit terminal
+                if (this.term) {
+                    this.term.focus();
+                    this.fitTerminal();
+                }
+            }
+
+            setLoading(isLoading) {
+                if (isLoading) {
+                    this.tabElement.classList.add('tab-loading');
+                } else {
+                    this.tabElement.classList.remove('tab-loading');
+                }
+            }
+
+            close() {
+                // Prevent closing the last tab
+                if (terminals.length <= 1) {
+                    return;
+                }
+
+                // Remove from DOM
+                this.tabElement.remove();
+                this.containerElement.remove();
+
+                // Clean up terminal
+                if (this.term) {
+                    this.term.dispose();
+                }
+
+                // Clean up shell on server (but only for additional tabs)
+                if (!this.isFirstTab && this.shellId) {
+                    sendMessage('close_shell', {
+                        containerId: sessionId,
+                        shellId: this.shellId
+                    });
+                }
+
+                // Remove from terminals array
+                const index = terminals.indexOf(this);
+                if (index > -1) {
+                    terminals.splice(index, 1);
+                }
+
+                // Activate another tab if this was active
+                if (activeTerminal === this && terminals.length > 0) {
+                    terminals[0].activate();
+                }
+            }
+        }
+
+        // Create initial terminal tab
+        function createInitialTab() {
+            const tab = new TerminalTab('initial', true);
+            terminals.push(tab);
+            tab.activate();
+        }
+
+        // Create a new terminal tab
+        function createNewTab() {
+            if (!sessionId) {
+                return;
+            }
+
+            const tab = new TerminalTab('tab-' + Date.now());
+            terminals.push(tab);
+            tab.activate();
+        }
+
+        // Resize all terminals
+        function resizeAllTerminals() {
+            terminals.forEach(terminal => {
+                terminal.fitTerminal();
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Create initial tab
+            createInitialTab();
+
+            // Add event listener for new tab button
+            newTabBtn.addEventListener('click', createNewTab);
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                clearTimeout(window.resizeTimeout);
+                window.resizeTimeout = setTimeout(resizeAllTerminals, 250);
+            });
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', () => {
+                if (sessionId) {
+                    sendMessage('cleanup', { id: sessionId });
+                }
+            });
+        });
+
+        // Replace Socket.IO event handlers with WebSocket handlers
+        socket.onopen = () => {
+            console.log('WebSocket connected');
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            switch (data.type) {
+                case 'session_id':
+                    sessionId = data.id;
+                    sendMessage('start_session', { id: sessionId });
+                    break;
+
+                case 'container_ready':
+                    if (activeTerminal && activeTerminal.isFirstTab) {
+                        activeTerminal.term.write('Container ready!\r\n\r\n');
+                        setTimeout(() => {
+                            activeTerminal.fitTerminal();
+                        }, 250);
+                    }
+                    break;
+
+                case 'output':
+                    const firstTab = terminals.find(t => t.isFirstTab);
+                    if (firstTab && firstTab.term) {
+                        firstTab.term.write(data.output);
+                    }
+                    break;
+
+                case 'shell_created':
+                    const targetTab = terminals.find(t => t.tabId === data.tabId);
+                    if (targetTab) {
+                        targetTab.shellId = data.shellId;
+                        targetTab.isReady = true;
+                        targetTab.setLoading(false);
+                        if (targetTab.creating) {
+                            targetTab.term.clear();
+                            targetTab.term.write('Shell ready!\r\n\r\n');
+                            targetTab.creating = false;
+                        }
+                        targetTab.fitTerminal();
+                        targetTab.term.focus();
+                    }
+                    break;
+
+                case 'shell_output':
+                    const targetTerminal = terminals.find(t => t.shellId === data.shellId);
+                    if (targetTerminal && targetTerminal.term) {
+                        targetTerminal.term.write(data.output);
+                    }
+                    break;
+
+                case 'error':
+                    if (activeTerminal && activeTerminal.term) {
+                        activeTerminal.term.write('\r\nError: ' + data.error + '\r\n');
+                        activeTerminal.setLoading(false);
+                    }
+                    break;
+            }
+        };
+
+        socket.onclose = () => {
+            console.log('WebSocket disconnected');
+            if (activeTerminal && activeTerminal.term) {
+                activeTerminal.term.write('\r\n\r\nConnection lost. Please refresh the page.\r\n');
+            }
+        };
+
+        socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+    </script>
+</body>
+</html>
