@@ -23,7 +23,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.min.css" integrity="sha512-XpXUuzg5afNt1bsgnrOesXP70TLH8tXYYK5sK+Y0UV+YBvJn9EfRFYWy4HT3TVDfH0nl1CO0lwOxIrt2gk9qjg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.js" integrity="sha512-Gujw5GajF5is3nMoGv9X+tCMqePLL/60qvAv1LofUZTV9jK8ENbM9L+maGmOsNzuZaiuyc/fpph1KT9uR5w3CQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js" integrity="sha512-8BHxHDLsOHx+flIrQ0DrZcea7MkHqRU5GbTHmbdzMRnAaoCIkZ97PqZcXJkKZckMMhqfoeaJE+DNUVuyoQsO3Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Add Font Awesome for tab icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -314,12 +313,20 @@
             }
         }
 
-        // Socket.IO connection
-        const socket = io(window.location.origin, {
-            transports: ['websocket'],
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000
-        });
+        // Replace the Socket.IO connection with WebSocket
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
+        const socket = new WebSocket(wsUrl);
+
+        // Replace socket.emit with socket.send
+        function sendMessage(type, data) {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: type,
+                    ...data
+                }));
+            }
+        }
 
         // Global variables
         let sessionId = null;  // This is the ws_id
@@ -414,14 +421,12 @@
                 this.term.onData((data) => {
                     if (sessionId) {
                         if (this.isFirstTab) {
-                            // First tab uses the original socket connection
-                            socket.emit('input', {
+                            sendMessage('input', {
                                 id: sessionId,
                                 input: data
                             });
                         } else if (this.shellId) {
-                            // Additional tabs use shell_input
-                            socket.emit('shell_input', {
+                            sendMessage('shell_input', {
                                 containerId: sessionId,
                                 shellId: this.shellId,
                                 input: data
@@ -441,7 +446,7 @@
                 this.term.write('Creating new shell...\r\n');
                 this.creating = true;
 
-                socket.emit('create_shell', {
+                sendMessage('create_shell', {
                     containerId: sessionId,
                     tabId: this.tabId
                 });
@@ -464,15 +469,13 @@
 
                     // Send resize event
                     if (this.isFirstTab) {
-                        // First tab uses the original resize
-                        socket.emit('resize', {
+                        sendMessage('resize', {
                             id: sessionId,
                             cols: cols,
                             rows: rows
                         });
                     } else if (this.shellId) {
-                        // Additional tabs use resize_shell
-                        socket.emit('resize_shell', {
+                        sendMessage('resize_shell', {
                             containerId: sessionId,
                             shellId: this.shellId,
                             cols: cols,
@@ -530,7 +533,7 @@
 
                 // Clean up shell on server (but only for additional tabs)
                 if (!this.isFirstTab && this.shellId) {
-                    socket.emit('close_shell', {
+                    sendMessage('close_shell', {
                         containerId: sessionId,
                         shellId: this.shellId
                     });
@@ -591,70 +594,83 @@
             // Cleanup on page unload
             window.addEventListener('beforeunload', () => {
                 if (sessionId) {
-                    socket.emit('cleanup', { id: sessionId });
+                    sendMessage('cleanup', { id: sessionId });
                 }
             });
         });
 
-        // Socket.IO event handlers
-        socket.on('connect', () => {
-            // Connection established
-        });
+        // Replace Socket.IO event handlers with WebSocket handlers
+        socket.onopen = () => {
+            console.log('WebSocket connected');
+        };
 
-        socket.on('session_id', (data) => {
-            sessionId = data.id;
-            socket.emit('start_session', { id: sessionId });
-        });
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
 
-        socket.on('container_ready', () => {
-            if (activeTerminal && activeTerminal.isFirstTab) {
-                activeTerminal.term.write('Container ready!\r\n\r\n');
-                setTimeout(() => {
-                    activeTerminal.fitTerminal();
-                }, 250);
+            switch (data.type) {
+                case 'session_id':
+                    sessionId = data.id;
+                    sendMessage('start_session', { id: sessionId });
+                    break;
+
+                case 'container_ready':
+                    if (activeTerminal && activeTerminal.isFirstTab) {
+                        activeTerminal.term.write('Container ready!\r\n\r\n');
+                        setTimeout(() => {
+                            activeTerminal.fitTerminal();
+                        }, 250);
+                    }
+                    break;
+
+                case 'output':
+                    const firstTab = terminals.find(t => t.isFirstTab);
+                    if (firstTab && firstTab.term) {
+                        firstTab.term.write(data.output);
+                    }
+                    break;
+
+                case 'shell_created':
+                    const targetTab = terminals.find(t => t.tabId === data.tabId);
+                    if (targetTab) {
+                        targetTab.shellId = data.shellId;
+                        targetTab.isReady = true;
+                        targetTab.setLoading(false);
+                        if (targetTab.creating) {
+                            targetTab.term.clear();
+                            targetTab.term.write('Shell ready!\r\n\r\n');
+                            targetTab.creating = false;
+                        }
+                        targetTab.fitTerminal();
+                        targetTab.term.focus();
+                    }
+                    break;
+
+                case 'shell_output':
+                    const targetTerminal = terminals.find(t => t.shellId === data.shellId);
+                    if (targetTerminal && targetTerminal.term) {
+                        targetTerminal.term.write(data.output);
+                    }
+                    break;
+
+                case 'error':
+                    if (activeTerminal && activeTerminal.term) {
+                        activeTerminal.term.write('\r\nError: ' + data.error + '\r\n');
+                        activeTerminal.setLoading(false);
+                    }
+                    break;
             }
-        });
+        };
 
-        // For the first tab (original socket)
-        socket.on('output', (data) => {
-            // Find the first tab
-            const firstTab = terminals.find(t => t.isFirstTab);
-            if (firstTab && firstTab.term) {
-                firstTab.term.write(data.output);
-            }
-        });
-
-        // For additional tabs (shell sockets)
-        socket.on('shell_created', (data) => {
-            const targetTab = terminals.find(t => t.tabId === data.tabId);
-            if (targetTab) {
-                targetTab.shellId = data.shellId;
-                targetTab.isReady = true;
-                targetTab.setLoading(false);
-                if (targetTab.creating) {
-                    targetTab.term.clear();
-                    targetTab.term.write('Shell ready!\r\n\r\n');
-                    targetTab.creating = false;
-                }
-                targetTab.fitTerminal();
-                targetTab.term.focus();
-            }
-        });
-
-        socket.on('shell_output', (data) => {
-            // Find which terminal this output belongs to
-            const targetTerminal = terminals.find(t => t.shellId === data.shellId);
-            if (targetTerminal && targetTerminal.term) {
-                targetTerminal.term.write(data.output);
-            }
-        });
-
-        socket.on('error', (data) => {
+        socket.onclose = () => {
+            console.log('WebSocket disconnected');
             if (activeTerminal && activeTerminal.term) {
-                activeTerminal.term.write('\r\nError: ' + data.error + '\r\n');
-                activeTerminal.setLoading(false);
+                activeTerminal.term.write('\r\n\r\nConnection lost. Please refresh the page.\r\n');
             }
-        });
+        };
+
+        socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
     </script>
 </body>
 </html>
