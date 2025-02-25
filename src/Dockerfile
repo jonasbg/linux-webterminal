@@ -35,7 +35,7 @@ COPY --from=builder /app/templates /templates
 COPY --from=builder /app/static /static
 
 # Set non-root user
-USER 1001:1000
+USER 1000:1000
 
 # Expose the application port
 EXPOSE 5000
