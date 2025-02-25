@@ -1,0 +1,37 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Development Environment",
+            "dependsOn": [
+                "Watch Dockerfile",
+                "Run Python Server"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Watch Dockerfile",
+            "type": "shell",
+            "command": "ls Dockerfile.base | entr -s 'docker build -t terminal-base . --file Dockerfile.base'",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "group": "develop"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Python Server",
+            "type": "shell",
+            "command": "source ${workspaceFolder}/.venv/bin/activate && ls **/*.html **/*.py Dockerfile* | entr -s 'CONTAINER_IMAGE=terminal-base python3 app.py'",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "group": "develop"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
