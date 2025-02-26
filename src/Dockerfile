@@ -28,8 +28,8 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/webterminal /webterminal
 
 # Copy web assets
-COPY --from=builder /app/templates /web/templates
-COPY --from=builder /app/static /web/static
+COPY --from=builder /app/web/templates /web/templates
+COPY --from=builder /app/web/static /web/static
 
 USER 1000:1000
 
