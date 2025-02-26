@@ -673,7 +673,7 @@
                         targetTab.setLoading(false);
                         if (targetTab.creating) {
                             targetTab.term.clear();
-                            targetTab.term.write('Shell ready!\r\n\r\n');
+                            targetTab.term.write('\r\n'); // Add a newline after the shell creation message, shell ready for input
                             targetTab.creating = false;
                         }
                         targetTab.fitTerminal();
