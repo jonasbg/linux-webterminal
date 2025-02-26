@@ -49,7 +49,7 @@ func main() {
 	})
 
 	// Serve static files from the static directory
-	router.Static("/web/static", "./static")
+	router.Static("web/static", "./static")
 
 	// Handle root path - serve the terminal template
 	router.GET("/", func(c *gin.Context) {
