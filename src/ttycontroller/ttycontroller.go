@@ -163,9 +163,9 @@ func (c *TTYController) CreateSession(sessionID, userID string, r *http.Request)
 			"io.containers.autoupdate": "image",
 		},
 		Env: []string{
-			"TERM=xterm",
-			"PS1=\\w \\$ ",
-			"HOME=/home/termuser",
+			"TERM=xterm-256color",
+			// "PS1=\\w \\$ ",
+			// "HOME=/home/termuser",
 			"PATH=/usr/local/bin",
 		},
 	}, &container.HostConfig{
@@ -361,10 +361,13 @@ func (c *TTYController) CleanupSession(sessionID string) {
 		}
 	}
 
-	ctx := context.Background()
-	if err := c.client.ContainerRemove(ctx, session.ContainerID, types.ContainerRemoveOptions{Force: true}); err != nil {
-		log.Printf("Error removing container %s: %v", containerID, err)
-	}
+	// Remove container in a goroutine to not block cleanup
+	go func() {
+		ctx := context.Background()
+		if err := c.client.ContainerRemove(ctx, session.ContainerID, types.ContainerRemoveOptions{Force: true}); err != nil {
+			log.Printf("Error removing container %s: %v", containerID, err)
+		}
+	}()
 
 	delete(c.userSessions, userID)
 	delete(c.sessions, sessionID)
