@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Details | DevSecOps Academy</title>
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col" x-data="courseDetail()" x-init="loadCourse()">
+  <!-- Navigation Bar -->
+  <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-10">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+      <a href="index.html" class="flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        <span class="text-xl font-bold">DevSecOps Academy</span>
+      </a>
+      <div class="flex space-x-6">
+        <a href="index.html" class="hover:text-blue-400 transition-colors">Home</a>
+        <a href="index.html#courses" class="hover:text-blue-400 transition-colors">Courses</a>
+        <a href="#" class="hover:text-blue-400 transition-colors">About</a>
+        <a href="#" class="hover:text-blue-400 transition-colors">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Loading state -->
+  <div x-show="loading" class="flex-1 flex items-center justify-center">
+    <div class="flex flex-col items-center">
+      <svg class="animate-spin h-12 w-12 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <p class="text-gray-300">Loading course details...</p>
+    </div>
+  </div>
+
+  <!-- Course content - hidden when loading -->
+  <div x-cloak x-show="!loading">
+    <!-- Course Hero Section -->
+    <header class="bg-gradient-to-b from-gray-800 to-gray-900 py-16">
+      <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row items-start justify-between gap-10">
+          <div class="md:w-2/3">
+            <div class="flex items-center text-sm text-gray-400 mb-3">
+              <a href="index.html" class="hover:text-blue-400">Home</a>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+              <a href="index.html#courses" class="hover:text-blue-400">Courses</a>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+              <span x-text="course.title" class="text-gray-300"></span>
+            </div>
+
+            <h1 x-text="course.title" class="text-4xl font-bold mb-4"></h1>
+            <div class="flex items-center mb-6">
+              <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm mr-4" x-text="course.date"></span>
+              <span class="text-gray-300">DevSecOps Learning Path</span>
+            </div>
+            <p x-text="course.description" class="text-lg text-gray-300"></p>
+          </div>
+
+          <div class="md:w-1/3 w-full bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-xl">
+            <h3 class="text-xl font-bold mb-6">Course Details</h3>
+            <ul class="space-y-4 mb-6">
+              <li class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Duration: 1 day</span>
+              </li>
+              <li class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Skill Level: Intermediate</span>
+              </li>
+              <li class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+                <span>Certificate Included</span>
+              </li>
+              <li class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span>Max 20 Participants</span>
+              </li>
+            </ul>
+            <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+              </svg>
+              Start Room Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Course Content Section -->
+    <section class="container mx-auto px-4 py-16">
+      <div class="flex flex-col md:flex-row gap-10">
+        <!-- Main Content -->
+        <div class="md:w-2/3">
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-8 mb-10">
+            <h2 class="text-3xl font-bold mb-6">What You'll Learn</h2>
+
+            <div x-html="course.content" class="prose prose-invert max-w-none">
+              <!-- Course content populated by Alpine.js -->
+            </div>
+          </div>
+
+          <!-- Prerequisites -->
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-8">
+            <h2 class="text-2xl font-bold mb-6">Prerequisites</h2>
+            <ul class="space-y-3">
+              <li class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Basic understanding of software development concepts</span>
+              </li>
+              <li class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Familiarity with command-line interfaces</span>
+              </li>
+              <li class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Basic knowledge of networking principles</span>
+              </li>
+              <li class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Previous courses in the learning path (if applicable)</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="md:w-1/3">
+          <!-- Instructor Info -->
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-6 mb-8">
+            <h3 class="text-xl font-bold mb-6">Your Instructor</h3>
+            <div class="flex items-center mb-4">
+              <div class="h-16 w-16 rounded-full bg-blue-800 flex items-center justify-center mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div>
+                <h4 class="font-bold">Security Expert</h4>
+                <p class="text-gray-400 text-sm">DevSecOps Specialist</p>
+              </div>
+            </div>
+            <p class="text-gray-300 text-sm">An experienced DevSecOps practitioner with years of industry experience implementing secure CI/CD pipelines and containerized applications.</p>
+          </div>
+
+          <!-- Related Courses -->
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-6 sticky top-24">
+            <h3 class="text-xl font-bold mb-6">Related Courses</h3>
+            <div class="space-y-4">
+              <template x-for="relatedCourse in relatedCourses" :key="relatedCourse.slug">
+                <a :href="`course.html?course=${relatedCourse.slug}`" class="block p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
+                  <h4 x-text="relatedCourse.title" class="font-bold mb-2"></h4>
+                  <p x-text="relatedCourse.date" class="text-sm text-gray-300"></p>
+                </a>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 py-10 mt-auto border-t border-gray-700">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span class="text-xl font-bold">DevSecOps Academy</span>
+          </div>
+        </div>
+        <div class="text-gray-400 text-center md:text-right">
+          <p>&copy; 2025 DevSecOps Academy. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Course detail functionality
+    function courseDetail() {
+      return {
+        loading: true,
+        course: {
+          title: '',
+          date: '',
+          description: '',
+          content: ''
+        },
+        relatedCourses: [],
+        allCourses: [
+          {
+            title: "Linux I",
+            date: "19. februar",
+            description: "En grundig introduksjon til Linux operativsystem. Kurset dekker grunnleggende kommandoer, filsystemstrukturen, tekstbehandling, samt innføring i skripting og automasjon.",
+            slug: "linux-1",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">Our Linux I course provides a thorough introduction to the Linux operating system, designed specifically for DevSecOps engineers who need to understand the fundamentals of secure system operations.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Linux architecture and security model</li>
+                  <li>Command line navigation and file management</li>
+                  <li>User and permission management</li>
+                  <li>Process management and monitoring</li>
+                  <li>Basic shell scripting for automation</li>
+                  <li>Package management and software installation</li>
+                  <li>System logs and troubleshooting</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">Throughout this course, you'll work on practical exercises in a secure Linux environment, including:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Setting up a secure Linux user environment</li>
+                  <li>Writing shell scripts to automate security checks</li>
+                  <li>Implementing file permission best practices</li>
+                  <li>Analyzing system logs for security events</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">As a DevSecOps engineer, a solid understanding of Linux fundamentals is essential because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Most CI/CD pipelines run on Linux-based systems</li>
+                  <li>Container technologies like Docker are built on Linux concepts</li>
+                  <li>Security scanning and testing tools often run in Linux environments</li>
+                  <li>Automation of security tasks requires Linux command-line proficiency</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "Linux II",
+            date: "26. februar",
+            description: "En grundig introduksjon til Linux operativsystem. Kurset dekker grunnleggende kommandoer, filsystemstrukturen, tekstbehandling, samt innføring i skripting og automasjon.",
+            slug: "linux-2",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">Building on the foundations of Linux I, this advanced course delves deeper into Linux security concepts and advanced scripting for DevSecOps engineers.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Advanced security configurations and hardening techniques</li>
+                  <li>System service management and security</li>
+                  <li>Network security in Linux environments</li>
+                  <li>Advanced shell scripting and automation</li>
+                  <li>Regular expressions for log analysis and data extraction</li>
+                  <li>Security monitoring and auditing tools</li>
+                  <li>Kernel security and SELinux/AppArmor</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">The practical exercises in Linux II will challenge you to implement robust security measures:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Hardening a Linux server according to security best practices</li>
+                  <li>Creating advanced shell scripts for security automation</li>
+                  <li>Implementing SELinux policies for better application containment</li>
+                  <li>Setting up automated security audits</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">Advanced Linux knowledge is crucial for DevSecOps professionals because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>It enables the creation of secure infrastructure as code</li>
+                  <li>It allows for advanced automation of security scanning and remediation</li>
+                  <li>Understanding Linux security mechanisms helps identify and fix vulnerabilities</li>
+                  <li>Many security tools require advanced Linux knowledge to properly configure and operate</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "Docker",
+            date: "5. mars",
+            description: "Fokus på Open Container Initiative (OCI) standarder. Kurset dekker opprettelse av sikre, minimale Docker-containere, og hvordan disse kan brukes til å effektivisere og standardisere distribusjon av applikasjoner.",
+            slug: "docker",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">This comprehensive Docker course focuses on Open Container Initiative (OCI) standards and secure containerization practices essential for DevSecOps engineers.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>OCI standards and container fundamentals</li>
+                  <li>Docker architecture and security model</li>
+                  <li>Building secure, minimal Docker images</li>
+                  <li>Vulnerability scanning in container images</li>
+                  <li>Container orchestration security basics</li>
+                  <li>Docker networking and security implications</li>
+                  <li>Secrets management in containerized environments</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">Throughout this course, you'll work on practical Docker security exercises:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Creating minimal, secure Docker images based on distroless or Alpine</li>
+                  <li>Implementing container security scanning in a pipeline</li>
+                  <li>Setting up secure container networking</li>
+                  <li>Implementing best practices for secrets management</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">Container security knowledge is essential for DevSecOps engineers because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Containers are a fundamental building block in modern application deployment</li>
+                  <li>Container images can introduce security vulnerabilities if not properly managed</li>
+                  <li>Understanding container isolation helps prevent security breaches</li>
+                  <li>Properly configured containers enhance application security and reliability</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "CI/CD",
+            date: "12. mars",
+            description: "Praktisk anvendelse av Continuous Integration (CI) og Continuous Delivery (CD) prinsipper. Kurset dekker hvordan man setter opp automatiserte byggelinjer som tillater deklarative, reproduserbare bygg med minimal innsats.",
+            slug: "ci-cd",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">Our CI/CD course covers the practical application of Continuous Integration and Continuous Delivery principles with a focus on security integration throughout the pipeline.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>CI/CD fundamentals and security considerations</li>
+                  <li>Setting up secure, reproducible build pipelines</li>
+                  <li>Integrating security scanning into CI/CD workflows</li>
+                  <li>Infrastructure as Code (IaC) security</li>
+                  <li>Secrets management in CI/CD pipelines</li>
+                  <li>Build artifact security and verification</li>
+                  <li>Implementing security gates and quality checks</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">During this course, you'll gain practical experience with:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Creating a secure CI/CD pipeline using GitHub Actions or GitLab CI</li>
+                  <li>Integrating SAST, DAST, and SCA security tools</li>
+                  <li>Implementing security policy as code</li>
+                  <li>Setting up secure artifact management</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">Secure CI/CD practices are at the core of DevSecOps because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>They enable security to be built into the software delivery process</li>
+                  <li>Automated security checks reduce human error and increase coverage</li>
+                  <li>Well-designed pipelines ensure security isn't bypassed for speed</li>
+                  <li>Security metrics from CI/CD provide visibility into application risk</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "CVE",
+            date: "19. mars",
+            description: "Gjennomgang av Common Vulnerabilities and Exposures (CVE) systemet. Kurset vil lære deg å vurdere kritikaliteten av sårbarheter, og hvordan du bruker denne informasjonen til å bedre sikre dine systemer.",
+            slug: "cve",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">This course provides a comprehensive overview of the Common Vulnerabilities and Exposures (CVE) system and vulnerability management practices essential for DevSecOps engineers.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Understanding the CVE system and CVSS scoring</li>
+                  <li>Vulnerability assessment and prioritization</li>
+                  <li>Implementing vulnerability scanning in DevOps workflows</li>
+                  <li>Managing and tracking vulnerabilities throughout the SDLC</li>
+                  <li>Patch management strategies and automation</li>
+                  <li>Working with vulnerability databases and advisories</li>
+                  <li>Creating vulnerability management policies</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">Throughout this course, you'll work on practical exercises including:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Setting up automated vulnerability scanning</li>
+                  <li>Analyzing and prioritizing CVEs based on CVSS and context</li>
+                  <li>Creating a vulnerability management workflow</li>
+                  <li>Implementing automated remediation for common vulnerabilities</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">Understanding vulnerability management is critical for DevSecOps engineers because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Known vulnerabilities are a primary attack vector for malicious actors</li>
+                  <li>Proper prioritization ensures the most critical issues are fixed first</li>
+                  <li>Automated vulnerability management is essential for fast-moving DevOps environments</li>
+                  <li>Understanding CVEs helps communicate risk effectively to stakeholders</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "DevSecOps",
+            date: "26. mars",
+            description: "Implementering av sikkerhetsprinsipper i DevOps-prosesser. Du vil lære hvordan du kan bygge sikre arbeidsprosesser med riktig verktøy, og hvordan du kan bruke automatisering til å levere trygg kode raskere.",
+            slug: "devsecops",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">This course covers the implementation of security principles in DevOps processes, creating a true DevSecOps culture and workflow in your organization.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>DevSecOps principles and cultural transformation</li>
+                  <li>Security as code and policy as code</li>
+                  <li>Building security champions programs</li>
+                  <li>Shifting security left in the SDLC</li>
+                  <li>Security automation and orchestration</li>
+                  <li>Compliance as code and continuous compliance</li>
+                  <li>Security metrics and KPIs for DevSecOps</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">During this course, you'll work on practical DevSecOps implementations:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Creating a comprehensive DevSecOps pipeline</li>
+                  <li>Implementing policy as code with Open Policy Agent</li>
+                  <li>Setting up security automation workflows</li>
+                  <li>Developing security metrics dashboards</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters</h3>
+                <p class="text-gray-300">DevSecOps transformation is essential for modern organizations because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>It aligns security with the speed of DevOps delivery</li>
+                  <li>It reduces the cost of fixing security issues by finding them earlier</li>
+                  <li>It creates shared responsibility for security across teams</li>
+                  <li>It enables continuous security assurance rather than point-in-time assessments</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "Kubernetes",
+            date: "2. april",
+            description: "Introduksjon til Kubernetes som en plattform for orkestrering av containere. Du vil lære hvordan du bygger sikre tjenester etter beste praksis, og hvordan du kan bruke innebygde sikkerhetsmekanismer i Kubernetes.",
+            slug: "kubernetes",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">This course introduces Kubernetes as a platform for container orchestration with a focus on security best practices for DevSecOps engineers.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Kubernetes architecture and security model</li>
+                  <li>Pod security standards and policies</li>
+                  <li>Network security and service meshes</li>
+                  <li>RBAC and authentication in Kubernetes</li>
+                  <li>Secrets management and encryption</li>
+                  <li>Security context and container hardening</li>
+                  <li>Kubernetes security scanning and auditing</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">Throughout this course, you'll work on securing Kubernetes environments:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Implementing Pod Security Standards</li>
+                  <li>Setting up proper RBAC configurations</li>
+                  <li>Securing Kubernetes networking with network policies</li>
+                  <li>Implementing secure CI/CD for Kubernetes deployments</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">Kubernetes security knowledge is crucial for DevSecOps engineers because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Kubernetes is the de facto standard for container orchestration</li>
+                  <li>Misconfigured Kubernetes clusters are a common source of security breaches</li>
+                  <li>Securing containerized workloads requires understanding Kubernetes security controls</li>
+                  <li>Many organizations run their CI/CD pipelines on Kubernetes</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "Trusselmodellering",
+            date: "9. april",
+            description: "Praktisk workshop i trusselmodellering. Du vil lære hvordan du identifiserer potensielle sikkerhetstrusler i dine systemer, og hvordan du bruker denne kunnskapen til å forbedre din sikkerhetspostur.",
+            slug: "trusselmodellering",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">This practical workshop on threat modeling teaches you how to identify potential security threats in your systems and use this knowledge to improve your security posture.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Threat modeling fundamentals and methodologies</li>
+                  <li>STRIDE, DREAD, and other threat categorization methods</li>
+                  <li>Attack surface analysis and reduction</li>
+                  <li>Data flow diagram creation and analysis</li>
+                  <li>Identifying security controls and mitigations</li>
+                  <li>Threat modeling in CI/CD pipelines</li>
+                  <li>Automating aspects of threat modeling</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Workshop</h3>
+                <p class="text-gray-300">During this workshop, you'll practice threat modeling with real-world scenarios:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Creating data flow diagrams for applications</li>
+                  <li>Identifying threats using the STRIDE method</li>
+                  <li>Prioritizing threats based on risk</li>
+                  <li>Developing security requirements from threat models</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">Threat modeling is a critical skill for DevSecOps engineers because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>It helps identify security issues before implementation begins</li>
+                  <li>It creates a structured approach to thinking about security risks</li>
+                  <li>It helps prioritize security efforts where they matter most</li>
+                  <li>It bridges the gap between development and security teams</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "Personvern",
+            date: "23. april",
+            description: "Gjennomgang av personvernlover og GDPR. Du vil lære hvilken betydning personvern har for utviklere, og hvorfor det er viktig å ta hensyn til dette i utviklingsprosessen.",
+            slug: "personvern",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">This course covers privacy laws and GDPR regulations, teaching you the significance of privacy for developers and why it's important to consider these aspects during the development process.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>GDPR and other privacy regulations overview</li>
+                  <li>Privacy by Design principles</li>
+                  <li>Data minimization and purpose limitation</li>
+                  <li>Implementing consent and preference management</li>
+                  <li>Data subject rights and technical implementation</li>
+                  <li>Data protection impact assessments</li>
+                  <li>Privacy in CI/CD pipelines</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">Throughout this course, you'll work on implementing privacy-respecting systems:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Designing privacy-friendly data models</li>
+                  <li>Implementing data subject rights mechanisms</li>
+                  <li>Creating privacy-aware logging practices</li>
+                  <li>Building privacy scanning into CI/CD pipelines</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">Privacy knowledge is essential for DevSecOps engineers because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Privacy regulations affect how data can be collected, processed, and stored</li>
+                  <li>Non-compliance can result in significant fines and reputational damage</li>
+                  <li>Privacy considerations need to be built into systems from the start</li>
+                  <li>DevSecOps practices can help enforce privacy requirements throughout development</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "Frontend",
+            date: "30. april",
+            description: "Her ser vi på de vanligste feilene som fremkommer når man utvikler front-end programvare. Og hvilke tiltak er implementert for nettlesere for å mitigere eventuelle angrep. Her vil vi blant annet se på autentisering og autorisasjon, cross-site scripting (XSS), cross-site request forgery (CSRF), clickjacking, Content Security Policy (CSP) med mer.",
+            slug: "frontend",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">This course examines the most common security issues that arise when developing front-end software and explores the measures implemented by browsers to mitigate potential attacks.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Authentication and authorization best practices</li>
+                  <li>Cross-Site Scripting (XSS) prevention</li>
+                  <li>Cross-Site Request Forgery (CSRF) protection</li>
+                  <li>Clickjacking defense mechanisms</li>
+                  <li>Content Security Policy (CSP) implementation</li>
+                  <li>Secure cookie configuration</li>
+                  <li>Client-side storage security</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">During this course, you'll work on securing frontend applications:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Implementing proper CSP headers</li>
+                  <li>Creating XSS-resistant code</li>
+                  <li>Building CSRF protection mechanisms</li>
+                  <li>Implementing secure authentication flows</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">Frontend security knowledge is crucial for DevSecOps engineers because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>The browser environment presents unique security challenges</li>
+                  <li>Frontend vulnerabilities are often exploited in real-world attacks</li>
+                  <li>Proper security headers and configurations can prevent many common attacks</li>
+                  <li>Client-side security must work in harmony with backend security measures</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "Backend",
+            date: "7. mai",
+            description: "Dette er en sesjon der vi vil se på sikkerheten under utvikling av API endepunkt. Hvordan gjøre de robuste for DDOS, hva er CORS, validering og sanitsering av input data, hvordan sikre API hemmeligheter osv. Og hvilke automatiserte verktøy finnes for å kjøre enkle DAST testing mot endepunktene.",
+            slug: "backend",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">This session focuses on security during the development of API endpoints, covering how to make them robust against DDoS attacks, CORS implementation, input validation, API secrets management, and automated DAST testing tools.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>API security best practices</li>
+                  <li>DDoS protection strategies</li>
+                  <li>Cross-Origin Resource Sharing (CORS) implementation</li>
+                  <li>Input validation and sanitization</li>
+                  <li>API authentication and authorization</li>
+                  <li>Secrets management for API keys</li>
+                  <li>Dynamic Application Security Testing (DAST) for APIs</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">Throughout this course, you'll work on securing API endpoints:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Implementing proper input validation and sanitization</li>
+                  <li>Setting up rate limiting and DDoS protection</li>
+                  <li>Configuring secure CORS policies</li>
+                  <li>Running automated DAST testing against your APIs</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">API security knowledge is essential for DevSecOps engineers because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>APIs are often the primary attack surface for modern applications</li>
+                  <li>Insecure APIs can expose sensitive data and functionality</li>
+                  <li>API security requires both code-level and infrastructure-level protections</li>
+                  <li>Automated testing is critical for maintaining API security at scale</li>
+                </ul>
+              </div>
+            `
+          },
+          {
+            title: "Penteste egen løsning",
+            date: "14. mai",
+            description: "Innføring i Kali Linux som et verktøy for penetrasjonstesting. Du vil lære hvordan du bruker verktøyene som benyttes av angripere for å avdekke og utnytte sårbarheter i dine egne systemer.",
+            slug: "pentesting",
+            content: `
+              <div class="space-y-6">
+                <p class="text-gray-300">This course provides an introduction to Kali Linux as a tool for penetration testing, teaching you how to use the tools employed by attackers to discover and exploit vulnerabilities in your own systems.</p>
+
+                <h3 class="text-2xl font-bold mt-6">Course Topics</h3>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Penetration testing methodology and ethics</li>
+                  <li>Kali Linux tools and environment</li>
+                  <li>Reconnaissance and information gathering</li>
+                  <li>Vulnerability scanning and assessment</li>
+                  <li>Web application penetration testing</li>
+                  <li>Infrastructure penetration testing</li>
+                  <li>Reporting and remediation</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Hands-on Labs</h3>
+                <p class="text-gray-300">During this course, you'll perform controlled penetration testing exercises:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Setting up a secure testing environment</li>
+                  <li>Using common pentesting tools in Kali Linux</li>
+                  <li>Identifying and exploiting common vulnerabilities</li>
+                  <li>Creating comprehensive pentest reports</li>
+                </ul>
+
+                <h3 class="text-2xl font-bold mt-6">Why This Course Matters for DevSecOps</h3>
+                <p class="text-gray-300">Penetration testing knowledge is valuable for DevSecOps engineers because:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                  <li>Understanding attacker techniques helps build better defenses</li>
+                  <li>Regular pentesting is part of a mature security program</li>
+                  <li>Finding vulnerabilities before attackers is critical</li>
+                  <li>The results of pentesting inform security priorities and improvements</li>
+                </ul>
+              </div>
+            `
+          }
+        ],
+
+        // Load course data based on URL parameter
+        loadCourse() {
+          // Simulate loading delay
+          setTimeout(() => {
+            // Get course slug from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const courseSlug = urlParams.get('course');
+
+            if (!courseSlug) {
+              window.location.href = 'index.html';
+              return;
+            }
+
+            // Find the current course
+            const currentCourse = this.allCourses.find(c => c.slug === courseSlug);
+
+            if (!currentCourse) {
+              window.location.href = 'index.html';
+              return;
+            }
+
+            this.course = currentCourse;
+
+            // Get related courses (excluding current)
+            this.relatedCourses = this.allCourses
+              .filter(c => c.slug !== courseSlug)
+              .sort(() => Math.random() - 0.5)
+              .slice(0, 3);
+
+            this.loading = false;
+          }, 800); // Simulate loading for 800ms
+        }
+      };
+    }
+  </script>
+</body>
+</html>
