@@ -1,4 +1,7 @@
+import eventlet
+eventlet.monkey_patch()
 # Eventlet monkey patch must come first
+
 import sys
 import signal
 import datetime
@@ -13,8 +16,7 @@ import docker
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from flask import Flask, render_template, request
-import eventlet
-eventlet.monkey_patch()
+
 
 
 # Create Flask app and wrap with app context
