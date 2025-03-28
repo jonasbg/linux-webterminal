@@ -1,4 +1,7 @@
 # Eventlet monkey patch must come first
+import eventlet
+eventlet.monkey_patch()
+
 import sys
 import signal
 import datetime
@@ -13,8 +16,6 @@ import docker
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from flask import Flask, render_template, request
-import eventlet
-eventlet.monkey_patch()
 
 
 # Create Flask app and wrap with app context
@@ -132,6 +133,7 @@ class TTYLogger:
         clean_terminal_output(text, command=None):
             Cleans terminal output by removing control sequences and formatting.
     """
+
     def __init__(self):
         self.enabled = os.environ.get(
             'TTY_LOGGING_ENABLED', 'false').lower() == 'true'
@@ -255,7 +257,6 @@ class TTYController:
 
     Methods:
         create_session(ws_id, user_id, request): Creates a new container session
-        create_session_with_shells(ws_id, user_id, request): Creates a session with shell support
         create_shell(ws_id, tab_id, user_id, request): Creates a new shell in existing session
         write_to_container(ws_id, data): Writes data to container
         read_from_container(ws_id): Reads data from container
@@ -273,6 +274,7 @@ class TTYController:
         output = controller.read_from_container("ws1")
         controller.cleanup_session("ws1")
     """
+
     def __init__(self):
         self.client = self._get_docker_client()
         self.sessions = {}
@@ -336,61 +338,67 @@ class TTYController:
                     tty=True,
                     stdin_open=True,
                     remove=True,
-                    user='1000:1000',
+                    user='0:0',
+                    userns_mode='host',
                     labels={
                         'app': 'web-terminal',
                         'ws_id': ws_id,
                         'user_id': user_id,
                         'io.containers.autoupdate': 'image'
                     },
-                    security_opt=[
-                        'no-new-privileges:true',
-                        "mask=/proc/cpuinfo",
-                        "mask=/proc/meminfo",
-                        "mask=/proc/diskstats",
-                        "mask=/proc/modules",
-                        "mask=/proc/kallsyms",
-                        "mask=/proc/keys",
-                        "mask=/proc/drivers",
-                        "mask=/proc/net",
-                        "mask=/proc/asound",
-                        "mask=/proc/key-users",
-                        "mask=/proc/slabinfo",
-                        "mask=/proc/uptime",
-                        "mask=/proc/stat",
-                        "mask=/proc/zoneinfo",
-                        "mask=/proc/vmallocinfo",
-                        "mask=/proc/mounts",
-                        "mask=/proc/kpageflags",
-                        "mask=/proc/kpagecount",
-                        "mask=/proc/kpagecgroup",
-                        "mask=/proc/scsi",
-                        "mask=/proc/buddyinfo",
-                        "mask=/proc/pagetypeinfo",
-                        "mask=/proc/ioports",
-                        "mask=/proc/iomem",
-                        "mask=/proc/interrupts",
-                        "mask=/proc/softirqs",
-                        "mask=/proc/dma",
-                        "mask=/proc/uptime"
-                    ],
-                    cap_drop=['ALL'],
-                    network="none",
-                    mem_limit='64m',
-                    cpu_period=100000,  # Default CPU CFS period (microseconds)
-                    cpu_quota=10000,    # Only allow 10% CPU usage
-                    cpu_shares=128,     # Lower CPU priority relative to other containers
-                    ulimits=[
-                        # Restrict CPU time to 10 seconds
-                        {'name': 'cpu', 'soft': 10, 'hard': 10},
-                        # Limit number of processes even more
-                        {'name': 'nproc', 'soft': 20, 'hard': 20}
-                    ],
-                    pids_limit=10,
-                    read_only=True,
+                    # cap_drop=['ALL'],
+                    # cap_add=["CAP_SETUID", "CAP_SETGID",
+                    #          "CAP_NET_BIND_SERVICE"],
+                    network="bridge",  # none, slirp4netns, bridge
+                    privileged=True,
+                    # security_opt=[
+                    #     'no-new-privileges:true',
+                    #     "mask=/proc/cpuinfo",
+                    #     "mask=/proc/meminfo",
+                    #     "mask=/proc/diskstats",
+                    #     "mask=/proc/modules",
+                    #     "mask=/proc/kallsyms",
+                    #     "mask=/proc/keys",
+                    #     "mask=/proc/drivers",
+                    #     "mask=/proc/net",
+                    #     "mask=/proc/asound",
+                    #     "mask=/proc/key-users",
+                    #     "mask=/proc/slabinfo",
+                    #     "mask=/proc/uptime",
+                    #     "mask=/proc/stat",
+                    #     "mask=/proc/zoneinfo",
+                    #     "mask=/proc/vmallocinfo",
+                    #     "mask=/proc/mounts",
+                    #     "mask=/proc/kpageflags",
+                    #     "mask=/proc/kpagecount",
+                    #     "mask=/proc/kpagecgroup",
+                    #     "mask=/proc/scsi",
+                    #     "mask=/proc/buddyinfo",
+                    #     "mask=/proc/pagetypeinfo",
+                    #     "mask=/proc/ioports",
+                    #     "mask=/proc/iomem",
+                    #     "mask=/proc/interrupts",
+                    #     "mask=/proc/softirqs",
+                    #     "mask=/proc/dma",
+                    #     "mask=/proc/uptime"
+                    # ],
+                    # cpu_period=100000,  # Default CPU CFS period (microseconds)
+                    # cpu_quota=10000,    # Only allow 10% CPU usage
+                    # cpu_shares=128,     # Lower CPU priority relative to other containers
+                    # ulimits=[
+                    #     # Restrict CPU time to 10 seconds
+                    #     {'name': 'cpu', 'soft': 10, 'hard': 10},
+                    #     # Limit number of processes even more
+                    #     {'name': 'nproc', 'soft': 20, 'hard': 20}
+                    # ],
+                    # pids_limit=10,
+                    # mem_limit='64m',
+                    read_only=False,
                     tmpfs={
-                        '/tmp': 'size=64m,noexec,nosuid',
-                        '/home': 'size=64m,exec'
+                        # '/home':              'size=2560m,exec',
+                        "/run":               "rw,nosuid,nodev,exec,mode=755",
+                        "/var/lib/containers": "rw,nosuid,nodev,exec,mode=755",
+                        "/tmp":                "size=256m,rw,nosuid,nodev",
                     },
                     environment={
                         "TERM": "xterm",
@@ -598,7 +606,8 @@ class TTYController:
                             "Removed user session mapping for %s", user_id)
 
                 except Exception as e:
-                    logger.error("Error in cleanup for session %s: %s", ws_id, e)
+                    logger.error(
+                        "Error in cleanup for session %s: %s", ws_id, e)
                 finally:
                     del self.sessions[ws_id]
                     logger.info("Session %s cleanup completed", ws_id)
@@ -632,7 +641,8 @@ class TTYController:
                     "Exec resize failed (this is normal for some container runtimes): %s", e)
 
         except Exception as e:
-            logger.error("Error resizing terminal for session %s: %s", ws_id, e)
+            logger.error(
+                "Error resizing terminal for session %s: %s", ws_id, e)
             raise
 
     def _get_docker_client(self):
@@ -851,129 +861,6 @@ class TTYController:
 
             except Exception as e:
                 logger.error("Error closing shell %s: %s", shell_id, e)
-    # Modified version of create_session to support shells
-
-    def create_session_with_shells(self, ws_id, user_id, request=None):
-        """Create a new session with support for multiple shells"""
-        with self.lock:
-            logger.info(
-                "Creating new session for user %s (ws_id: %s)", user_id, ws_id)
-
-            # Check if we've hit the container limit
-            if len(self.sessions) >= self.max_containers:
-                logger.warning(
-                    "Maximum container limit (%d) reached", self.max_containers)
-                raise Exception("Maximum number of containers reached")
-
-            if user_id in self.user_sessions:
-                old_ws_id = self.user_sessions[user_id]
-                logger.info(
-                    "User %s has existing session %s, cleaning up", user_id, old_ws_id)
-                self.cleanup_session(old_ws_id)
-
-            try:
-                image = os.environ.get(
-                    'CONTAINER_IMAGE', 'ghcr.io/jonasbg/linux-webterminal/terminal-base:latest')
-                logger.info("Starting container with image: %s", image)
-                container = self.client.containers.run(
-                    image,
-                    detach=True,
-                    tty=True,
-                    stdin_open=True,
-                    remove=True,
-                    user='1000:1000',
-                    labels={
-                        'app': 'web-terminal',
-                        'ws_id': ws_id,
-                        'user_id': user_id,
-                        'io.containers.autoupdate': 'image'
-                    },
-                    security_opt=[
-                        'no-new-privileges:true',
-                        "mask=/proc/cpuinfo",
-                        "mask=/proc/meminfo",
-                        "mask=/proc/diskstats",
-                        "mask=/proc/modules",
-                        "mask=/proc/kallsyms",
-                        "mask=/proc/keys",
-                        "mask=/proc/drivers",
-                        "mask=/proc/net",
-                        "mask=/proc/asound",
-                        "mask=/proc/key-users",
-                        "mask=/proc/slabinfo",
-                        "mask=/proc/uptime",
-                        "mask=/proc/stat",
-                        "mask=/proc/zoneinfo",
-                        "mask=/proc/vmallocinfo",
-                        "mask=/proc/mounts",
-                        "mask=/proc/kpageflags",
-                        "mask=/proc/kpagecount",
-                        "mask=/proc/kpagecgroup",
-                        "mask=/proc/scsi",
-                        "mask=/proc/buddyinfo",
-                        "mask=/proc/pagetypeinfo",
-                        "mask=/proc/ioports",
-                        "mask=/proc/iomem",
-                        "mask=/proc/interrupts",
-                        "mask=/proc/softirqs",
-                        "mask=/proc/dma",
-                        "mask=/proc/uptime"
-                    ],
-                    cap_drop=['ALL'],
-                    network="none",
-                    mem_limit='64m',
-                    cpu_period=100000,
-                    cpu_quota=10000,
-                    cpu_shares=128,
-                    ulimits=[
-                        {'name': 'cpu', 'soft': 10, 'hard': 10},
-                        {'name': 'nproc', 'soft': 20, 'hard': 20}
-                    ],
-                    pids_limit=10,
-                    read_only=True,
-                    tmpfs={
-                        '/tmp': 'size=64m,noexec,nosuid',
-                        '/home': 'size=64m,exec'
-                    },
-                    environment={
-                        "TERM": "xterm",
-                        "PS1": "\\w \\$ ",
-                        "HOME": "/home/termuser",
-                        "PATH": "/usr/local/bin",
-                    }
-                )
-
-                # Initialize the session with container and user info
-                self.sessions[ws_id] = {
-                    'container': container,
-                    'user_id': user_id,
-                    'shells': {}
-                }
-                self.user_sessions[user_id] = ws_id
-
-                # Create the main shell for this container
-                shell_id = self.create_shell(
-                    ws_id, 'initial', user_id, request)
-
-                # Store the main shell ID
-                self.sessions[ws_id]['main_shell_id'] = shell_id
-
-                def cleanup_after_lifetime():
-                    eventlet.sleep(self.container_lifetime)
-                    self.cleanup_session(ws_id)
-
-                eventlet.spawn_n(cleanup_after_lifetime)
-
-                logger.info(
-                    "Container %s created successfully for user %s", container.id[:12], user_id)
-                return container.id, shell_id
-
-            except Exception as e:
-                logger.error(
-                    "Failed to create container for user %s: %s", user_id, e)
-                if ws_id in self.sessions:
-                    self.cleanup_session(ws_id)
-                raise
 
     # Modified cleanup_session to handle shells
     def cleanup_session_with_shells(self, ws_id):
@@ -1015,7 +902,8 @@ class TTYController:
                             "Removed user session mapping for %s", user_id)
 
                 except Exception as e:
-                    logger.error("Error in cleanup for session %s: %s", ws_id, e)
+                    logger.error(
+                        "Error in cleanup for session %s: %s", ws_id, e)
                 finally:
                     del self.sessions[ws_id]
                     logger.info("Session %s cleanup completed", ws_id)
@@ -1359,7 +1247,7 @@ signal.signal(signal.SIGTERM, cleanup_all_containers)
 
 if __name__ == '__main__':
     try:
-        port = int(os.environ.get('PORT', 5000))
+        port = int(os.environ.get('PORT', 8080))
         app.logger.info("Server starting on port %d", port)
 
         socketio.run(
