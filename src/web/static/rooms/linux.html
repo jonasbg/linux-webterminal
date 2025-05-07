@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linux I - Course Room | DevSecOps Academy</title>
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Confetti JS -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <style>
+
+[x-show="showCurriculum"] .overflow-y-auto {
+    pointer-events: auto !important;
+  }
+
+  /* Enable text selection within the modal */
+  [x-show="showCurriculum"] .p-6 {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+  }
+    [x-cloak] { display: none !important; }
+
+    /* Terminal styling */
+    .terminal {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #1e1e1e;
+      color: #f8f8f8;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .terminal-prompt {
+      color: #98c379;
+    }
+
+    .terminal-command {
+      color: #e5c07b;
+    }
+
+    .terminal-output {
+      color: #abb2bf;
+    }
+
+    /* Resizable panels */
+    .gutter {
+      background-color: #2d3748;
+      background-repeat: no-repeat;
+      background-position: 50%;
+    }
+
+    .gutter.gutter-horizontal {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+      cursor: col-resize;
+    }
+
+    /* Progress pills */
+    .progress-pill {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: #4a5568;
+      transition: all 0.3s ease;
+    }
+
+    .progress-pill.active {
+      background-color: #4299e1;
+    }
+
+    .progress-pill.completed {
+      background-color: #68d391;
+    }
+
+    /* Progress line */
+    .progress-line {
+      height: 2px;
+      background-color: #4a5568;
+    }
+
+    .progress-line.completed {
+      background-color: #68d391;
+    }
+
+    /* Task transitions */
+    .task-transition {
+      transition: all 0.4s ease-in-out;
+    }
+
+    .task-enter {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .task-enter-active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .task-exit {
+      opacity: 1;
+    }
+
+    .task-exit-active {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+  <!-- Navigation Bar -->
+  <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-10">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <a href="index.html" class="flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        <span class="text-lg font-bold">DevSecOps Academy</span>
+      </a>
+
+      <!-- Room Controls -->
+      <div class="flex items-center space-x-3">
+        <span class="hidden md:inline text-blue-400 font-semibold">Linux I: Fundamentals</span>
+        <button id="fullscreenBtn" class="p-1.5 bg-gray-700 hover:bg-gray-600 rounded-md text-gray-300 hover:text-white transition-colors" title="Fullscreen Curriculum">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+        </button>
+        <a href="dashboard.html" class="p-1.5 bg-gray-700 hover:bg-gray-600 rounded-md text-gray-300 hover:text-white transition-colors" title="Exit Room">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area with Course Room -->
+  <div class="flex-1 flex flex-col" x-data="courseRoom()" x-init="initCourseRoom()">
+    <!-- Course Header -->
+    <div class="relative">
+      <div class="absolute inset-0 bg-gradient-to-b from-gray-900/0 to-gray-900"></div>
+      <div class="w-full h-48 md:h-56 lg:h-64 bg-gray-800 overflow-hidden">
+        <img src="/api/placeholder/1200/400" alt="Linux Course" class="w-full h-full object-cover">
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+        <div class="container mx-auto">
+          <h1 class="text-2xl md:text-3xl font-bold mb-1">Linux I: Command Line Fundamentals</h1>
+          <p class="text-gray-300">Introduction to the Linux operating system and basic commands</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fullscreen Curriculum Modal -->
+    <div x-show="showCurriculum" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/90" @click="showCurriculum = false">
+      <div class="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-700" @click.stop>
+        <div class="sticky top-0 bg-gray-800 p-4 border-b border-gray-700 flex justify-between items-center z-10">
+          <h2 class="text-xl font-bold">Linux I: Full Curriculum</h2>
+          <button @click="showCurriculum = false" class="p-1 rounded-full hover:bg-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="p-6">
+          <!-- Curriculum Introduction -->
+          <div class="mb-8">
+            <div class="aspect-video bg-gray-900 rounded-lg mb-4 overflow-hidden">
+              <img src="/api/placeholder/800/450" alt="Instructor Video" class="w-full h-full object-cover">
+              <div class="absolute inset-0 flex items-center justify-center">
+                <button class="bg-blue-600/80 hover:bg-blue-600 rounded-full p-4 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <h3 class="text-lg font-bold mb-3">Introduction from the Instructor</h3>
+            <p class="text-gray-300 mb-4">Welcome to Linux I, the first step in your DevSecOps journey. This course will introduce you to the Linux operating system, focusing on command-line operations that are essential for any security-conscious developer.</p>
+            <p class="text-gray-300">By the end of this course, you'll be comfortable navigating Linux file systems, managing files and permissions, and performing basic system operations - all skills that form the foundation of secure DevOps practices.</p>
+          </div>
+
+          <!-- Curriculum Outline -->
+          <div>
+            <h3 class="text-lg font-bold mb-4">Course Outline</h3>
+            <div class="space-y-6">
+              <div class="border border-gray-700 rounded-lg overflow-hidden">
+                <div class="bg-gray-700 p-3 font-medium">
+                  Module 1: Introduction to Linux
+                </div>
+                <div class="p-4 space-y-2">
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-green-500 flex-shrink-0 mt-0.5 mr-3 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="font-medium">Linux History and Philosophy</p>
+                      <p class="text-sm text-gray-400">Understanding the open-source model and Unix philosophy</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-green-500 flex-shrink-0 mt-0.5 mr-3 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="font-medium">Linux Distributions</p>
+                      <p class="text-sm text-gray-400">Comparing common distributions and their security features</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-green-500 flex-shrink-0 mt-0.5 mr-3 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="font-medium">Terminal Basics</p>
+                      <p class="text-sm text-gray-400">Working with the Bash shell and understanding the terminal environment</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="border border-gray-700 rounded-lg overflow-hidden">
+                <div class="bg-gray-700 p-3 font-medium">
+                  Module 2: File System Navigation
+                </div>
+                <div class="p-4 space-y-2">
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-blue-500 flex-shrink-0 mt-0.5 mr-3 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="font-medium">File System Structure</p>
+                      <p class="text-sm text-gray-400">Understanding the Linux file system hierarchy</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-blue-500 flex-shrink-0 mt-0.5 mr-3 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="font-medium">Navigation Commands</p>
+                      <p class="text-sm text-gray-400">Using pwd, cd, ls and finding files efficiently</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-gray-600 flex-shrink-0 mt-0.5 mr-3 flex items-center justify-center">
+                    </div>
+                    <div>
+                      <p class="font-medium">Working with Paths</p>
+                      <p class="text-sm text-gray-400">Understanding absolute and relative paths</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="border border-gray-700 rounded-lg overflow-hidden">
+                <div class="bg-gray-700 p-3 font-medium">
+                  Module 3: File Operations
+                </div>
+                <div class="p-4 space-y-2">
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-gray-600 flex-shrink-0 mt-0.5 mr-3"></div>
+                    <div>
+                      <p class="font-medium">Creating and Manipulating Files</p>
+                      <p class="text-sm text-gray-400">Using touch, mkdir, cp, mv, and rm</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-gray-600 flex-shrink-0 mt-0.5 mr-3"></div>
+                    <div>
+                      <p class="font-medium">File Permissions and Security</p>
+                      <p class="text-sm text-gray-400">Understanding and modifying file permissions with chmod</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-gray-600 flex-shrink-0 mt-0.5 mr-3"></div>
+                    <div>
+                      <p class="font-medium">File Ownership</p>
+                      <p class="text-sm text-gray-400">Managing file ownership with chown and chgrp</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="border border-gray-700 rounded-lg overflow-hidden">
+                <div class="bg-gray-700 p-3 font-medium">
+                  Module 4: Text Processing
+                </div>
+                <div class="p-4 space-y-2">
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-gray-600 flex-shrink-0 mt-0.5 mr-3"></div>
+                    <div>
+                      <p class="font-medium">Text Editors</p>
+                      <p class="text-sm text-gray-400">Using vim and nano for secure configuration editing</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-gray-600 flex-shrink-0 mt-0.5 mr-3"></div>
+                    <div>
+                      <p class="font-medium">Text Processing Tools</p>
+                      <p class="text-sm text-gray-400">Using grep, sed, and awk for log analysis</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-gray-600 flex-shrink-0 mt-0.5 mr-3"></div>
+                    <div>
+                      <p class="font-medium">Input/Output Redirection</p>
+                      <p class="text-sm text-gray-400">Understanding stdin, stdout, pipes, and redirection</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="border border-gray-700 rounded-lg overflow-hidden">
+                <div class="bg-gray-700 p-3 font-medium">
+                  Module 5: System Information
+                </div>
+                <div class="p-4 space-y-2">
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-gray-600 flex-shrink-0 mt-0.5 mr-3"></div>
+                    <div>
+                      <p class="font-medium">Process Management</p>
+                      <p class="text-sm text-gray-400">Understanding and managing processes with ps, top, and kill</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-gray-600 flex-shrink-0 mt-0.5 mr-3"></div>
+                    <div>
+                      <p class="font-medium">System Monitoring</p>
+                      <p class="text-sm text-gray-400">Monitoring system resources and security</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="h-5 w-5 rounded-full bg-gray-600 flex-shrink-0 mt-0.5 mr-3"></div>
+                    <div>
+                      <p class="font-medium">Special File Systems</p>
+                      <p class="text-sm text-gray-400">Understanding /proc and /sys for system information</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Split Panel Interface -->
+    <div class="flex-1 flex flex-col lg:flex-row" id="splitPanels">
+      <!-- Tasks Panel -->
+      <div class="tasks-panel flex-1 lg:w-1/2 lg:min-w-[33%] bg-gray-900 p-4 md:p-6 overflow-y-auto">
+        <div class="max-w-3xl mx-auto">
+          <!-- Progress Bar -->
+          <div class="mb-8">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="text-lg font-bold">Progress</h2>
+              <span class="text-sm text-gray-400" x-text="`Task ${currentTask + 1} of ${tasks.length}`"></span>
+            </div>
+
+            <div class="flex items-center">
+              <template x-for="(task, index) in tasks" :key="index">
+                <div class="flex items-center">
+                  <div
+                    class="progress-pill cursor-pointer"
+                    :class="{
+                      'active': currentTask === index,
+                      'completed': index < currentTask
+                    }"
+                    @click="goToTask(index)"
+                    :title="`Task ${index + 1}`">
+                  </div>
+                  <div
+                    x-show="index < tasks.length - 1"
+                    class="progress-line w-8 mx-1"
+                    :class="{ 'completed': index < currentTask }">
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Current Task -->
+          <div
+            class="bg-gray-800 rounded-lg border border-gray-700 p-6 mb-6 task-transition"
+            :class="{ 'task-enter-active': taskTransitioned, 'task-enter': !taskTransitioned }">
+            <div class="flex items-start justify-between mb-4">
+              <h3 class="text-xl font-bold" x-text="`Task ${currentTask + 1}: ${tasks[currentTask].title}`"></h3>
+              <span class="bg-blue-600 text-xs font-bold py-1 px-2 rounded">5 points</span>
+            </div>
+
+            <div class="prose prose-invert prose-sm max-w-none mb-6">
+              <p x-html="tasks[currentTask].description"></p>
+            </div>
+
+            <div x-show="tasks[currentTask].type === 'input'" class="mb-6">
+              <label :for="`answer-${currentTask}`" class="block text-sm font-medium text-gray-400 mb-2">Your Answer:</label>
+              <div class="flex">
+                <input
+                  :id="`answer-${currentTask}`"
+                  type="text"
+                  x-model="tasks[currentTask].userAnswer"
+                  class="flex-1 bg-gray-700 text-white border border-gray-600 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  :placeholder="tasks[currentTask].placeholder || 'Enter your answer'">
+                <button
+                  @click="checkAnswer()"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg transition-colors">
+                  Submit
+                </button>
+              </div>
+              <p x-show="tasks[currentTask].error" x-text="tasks[currentTask].error" class="mt-2 text-red-400 text-sm"></p>
+            </div>
+
+            <div x-show="tasks[currentTask].type === 'multiple-choice'" class="mb-6">
+              <div class="space-y-3">
+                <template x-for="(option, index) in tasks[currentTask].options" :key="index">
+                  <div>
+                    <label :for="`option-${currentTask}-${index}`" class="flex items-start p-3 bg-gray-700 rounded-lg border border-gray-600 cursor-pointer hover:border-gray-500 transition-colors">
+                      <input
+                        :id="`option-${currentTask}-${index}`"
+                        type="radio"
+                        :name="`task-${currentTask}`"
+                        :value="option"
+                        x-model="tasks[currentTask].userAnswer"
+                        class="h-4 w-4 mt-1 mr-3 text-blue-600 bg-gray-700 border-gray-500 focus:ring-blue-500 focus:ring-offset-gray-800">
+                      <span x-text="option"></span>
+                    </label>
+                  </div>
+                </template>
+              </div>
+              <div class="mt-4">
+                <button
+                  @click="checkAnswer()"
+                  class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors">
+                  Submit Answer
+                </button>
+              </div>
+              <p x-show="tasks[currentTask].error" x-text="tasks[currentTask].error" class="mt-2 text-red-400 text-sm"></p>
+            </div>
+
+            <div x-show="tasks[currentTask].completed" class="bg-green-900/30 border border-green-700 rounded-lg p-4 text-green-400">
+              <div class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p class="font-medium">Correct! Well done.</p>
+                  <p x-show="tasks[currentTask].explanation" x-text="tasks[currentTask].explanation" class="mt-1 text-sm"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Task Navigation -->
+          <div class="flex justify-between">
+            <button
+              x-show="currentTask > 0"
+              @click="previousTask()"
+              class="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span>Previous Task</span>
+            </button>
+
+            <button
+              x-show="currentTask < tasks.length - 1 && tasks[currentTask].completed"
+              @click="nextTask()"
+              class="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors">
+              <span>Next Task</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+            </button>
+
+            <button
+              x-show="tasks.every(task => task.completed) && currentTask === tasks.length - 1"
+              @click="finishCourse()"
+              class="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors">
+              <span>Complete Course</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terminal Panel -->
+      <div class="terminal-panel flex-1 lg:w-1/2 lg:min-w-[33%] bg-gray-800 flex flex-col border-t border-gray-700 lg:border-t-0 lg:border-l">
+        <!-- Terminal Tabs -->
+        <div class="bg-gray-900 p-2 border-b border-gray-700 flex">
+          <template x-for="(tab, index) in terminalTabs" :key="index">
+            <button
+              @click="activeTerminalTab = index"
+              class="mr-1 py-1.5 px-4 rounded-t-lg transition-colors text-sm font-medium"
+              :class="activeTerminalTab === index ? 'bg-gray-800 text-white' : 'bg-gray-900 text-gray-400 hover:bg-gray-800/50'">
+              <span x-text="tab.name"></span>
+            </button>
+          </template>
+
+          <button
+            @click="addTerminalTab()"
+            class="py-1.5 px-3 text-gray-400 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Terminal Content -->
+        <div class="terminal flex-1 p-4 overflow-y-auto font-mono text-sm" x-html="terminalTabs[activeTerminalTab].content">
+        </div>
+
+        <!-- Terminal Input -->
+        <div class="p-2 border-t border-gray-700 bg-gray-900">
+          <div class="flex items-center">
+            <span class="terminal-prompt mr-2">user@linux:~$</span>
+            <input
+              x-ref="terminalInput"
+              @keydown.enter="executeCommand($event)"
+              type="text"
+              class="flex-1 bg-transparent border-none outline-none text-white font-mono"
+              placeholder="Type your command here...">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 py-4 border-t border-gray-700">
+    <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+      <div class="mb-4 md:mb-0 flex items-center">
+        <span class="text-sm text-gray-400">© 2025 DevSecOps Academy</span>
+      </div>
+      <div class="flex space-x-4">
+        <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Help</a>
+        <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Documentation</a>
+        <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Report Issue</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Split.js for resizable panels -->
+  <script src="https://cdn.jsdelivr.net/npm/split.js@1.6.4/dist/split.min.js"></script>
+
+  <script>
+    function courseRoom() {
+      return {
+        showCurriculum: false,
+        currentTask: 0,
+        taskTransitioned: false,
+        activeTerminalTab: 0,
+        terminalTabs: [
+          {
+            name: 'Terminal 1',
+            content: `<div class="mb-4">
+              <div class="terminal-output">Welcome to Linux Fundamentals Terminal.</div>
+              <div class="terminal-output">Type <span class="terminal-command">help</span> for available commands.</div>
+            </div>`
+          }
+        ],
+        tasks: [
+          {
+            title: 'Your First Linux Command',
+            type: 'input',
+            description: `Let's start with a basic Linux command. The <code>ls</code> command is used to list files and directories.<br><br>
+                          <strong>Task:</strong> Type <code>ls</code> in the terminal to list files in the current directory, then enter the name of the hidden file you find (it starts with a dot).`,
+            answer: '.bash_history',
+            userAnswer: '',
+            error: '',
+            completed: false,
+            explanation: 'Hidden files in Linux start with a dot (.) and are not shown by default with ls. You need to use ls -a to see them.'
+          },
+          {
+            title: 'Exploring System Information',
+            type: 'input',
+            description: `The <code>/proc</code> directory contains information about running processes and system resources.<br><br>
+                          <strong>Task:</strong> Run <code>ls -lah /proc</code> in the terminal. How many entries (total count) are displayed?`,
+            answer: '26',
+            userAnswer: '',
+            error: '',
+            completed: false,
+            placeholder: 'Enter the number',
+            explanation: 'The /proc filesystem is a pseudo-filesystem that provides an interface to kernel data structures. It contains information about processes and other system information.'
+          },
+          {
+            title: 'Understanding File Permissions',
+            type: 'multiple-choice',
+            description: `File permissions in Linux are represented by a string like <code>-rwxr-xr--</code>.<br><br>
+                          <strong>Task:</strong> What does the permission string <code>-rw-r-----</code> mean for a file?`,
+            options: [
+              'Owner can read and write, group can read only, others have no access',
+              'Owner can read, write, and execute, group can read only, others have no access',
+              'Owner can read and write, group and others can read only',
+              'Owner can read only, group can read and write, others have no access'
+            ],
+            answer: 'Owner can read and write, group can read only, others have no access',
+            userAnswer: '',
+            error: '',
+            completed: false,
+            explanation: 'In the permission string -rw-r-----, the owner has read (r) and write (w) permissions, the group has read (r) only permissions, and others have no permissions.'
+          },
+          {
+            title: 'Working with Processes',
+            type: 'input',
+            description: `The <code>ps</code> command is used to view information about processes running on the system.<br><br>
+                          <strong>Task:</strong> Run <code>ps aux | grep bash</code> in the terminal. How many bash processes are running?`,
+            answer: '2',
+            userAnswer: '',
+            error: '',
+            completed: false,
+            placeholder: 'Enter the number',
+            explanation: 'The ps aux command lists all processes for all users, and grep filters the output to show only lines containing "bash".'
+          },
+          {
+            title: 'Creating and Modifying Files',
+            type: 'multiple-choice',
+            description: `Let's create a new file and modify its permissions.<br><br>
+                          <strong>Task:</strong> Run the following commands in sequence:<br>
+                          1. <code>touch secret.txt</code><br>
+                          2. <code>chmod 600 secret.txt</code><br>
+                          3. <code>ls -l secret.txt</code><br><br>
+                          What permission string will be displayed for secret.txt?`,
+            options: [
+              '-rw-------',
+              '-rw-r--r--',
+              '-rwx------',
+              '-r--r--r--'
+            ],
+            answer: '-rw-------',
+            userAnswer: '',
+            error: '',
+            completed: false,
+            explanation: 'chmod 600 sets the permission to read and write (6) for the owner, and no permissions (0) for group and others. This results in -rw------- in symbolic notation.'
+          }
+        ],
+
+        initCourseRoom() {
+          // Initialize Split.js for resizable panels
+          Split(['#splitPanels .tasks-panel', '#splitPanels .terminal-panel'], {
+            sizes: [50, 50],
+            minSize: [300, 300],
+            gutterSize: 8,
+            cursor: 'col-resize'
+          });
+
+          // Initialize fullscreen button
+          document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            this.showCurriculum = true;
+          });
+
+          // Set initial task transition state
+          setTimeout(() => {
+            this.taskTransitioned = true;
+          }, 100);
+
+          // Initialize terminal input
+          setTimeout(() => {
+            this.$refs.terminalInput.focus();
+          }, 200);
+        },
+
+        executeCommand(event) {
+          const command = event.target.value.trim();
+
+          if (!command) return;
+
+          // Add command to terminal output
+          const currentTerminal = this.terminalTabs[this.activeTerminalTab];
+          currentTerminal.content += `<div class="mb-2">
+            <span class="terminal-prompt">user@linux:~$</span> <span class="terminal-command">${command}</span>
+          </div>`;
+
+          // Process command and generate output
+          let output = this.processCommand(command);
+
+          // Add output to terminal
+          currentTerminal.content += `<div class="mb-4">
+            <div class="terminal-output">${output}</div>
+          </div>`;
+
+          // Clear input and scroll to bottom
+          event.target.value = '';
+          const terminal = event.target.closest('.terminal-panel').querySelector('.terminal');
+          terminal.scrollTop = terminal.scrollHeight;
+        },
+
+        processCommand(command) {
+          // Simple command processor
+          if (command === 'help') {
+            return `Available commands:<br>
+                    ls [-la] [directory] - List directory contents<br>
+                    cd [directory] - Change directory<br>
+                    pwd - Print working directory<br>
+                    ps [options] - Report process status<br>
+                    cat [file] - Display file contents<br>
+                    touch [file] - Create empty file<br>
+                    mkdir [directory] - Create directory<br>
+                    chmod [permissions] [file] - Change file permissions<br>
+                    clear - Clear terminal screen`;
+          } else if (command === 'ls') {
+            return 'Documents  Downloads  Pictures  secret.txt';
+          } else if (command === 'ls -a' || command === 'ls -la' || command === 'ls -al') {
+            return '.  ..  .bash_history  .bashrc  .profile  Documents  Downloads  Pictures  secret.txt';
+          } else if (command === 'ls -lah /proc') {
+            return `total 0
+                  dr-xr-xr-x   9 root      root         0 Feb 27 12:39 .
+                  dr-xr-xr-x  19 root      root      4.0K Feb 27 12:00 ..
+                  dr-xr-xr-x   9 root      root         0 Feb 27 12:39 1
+                  dr-xr-xr-x   9 root      root         0 Feb 27 12:39 2
+                  dr-xr-xr-x   9 root      root         0 Feb 27 12:39 3
+                  dr-xr-xr-x   9 root      root         0 Feb 27 12:39 4
+                  dr-xr-xr-x   9 root      root         0 Feb 27 12:39 5
+                  dr-xr-xr-x   9 root      root         0 Feb 27 12:39 acpi
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 buddyinfo
+                  dr-xr-xr-x   5 root      root         0 Feb 27 12:39 bus
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 cgroups
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 cmdline
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 cpuinfo
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 crypto
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 devices
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 diskstats
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 dma
+                  dr-xr-xr-x   2 root      root         0 Feb 27 12:39 driver
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 execdomains
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 fb
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 filesystems
+                  dr-xr-xr-x   8 root      root         0 Feb 27 12:39 fs
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 interrupts
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 iomem
+                  -r--r--r--   1 root      root         0 Feb 27 12:39 ioports
+                  dr-xr-xr-x 110 root      root         0 Feb 27 12:39 irq`;
+          } else if (command === 'ps aux | grep bash') {
+            return `user     1234  0.0  0.1  10572  5312 pts/0    Ss   12:32   0:00 bash
+                  user     1328  0.0  0.1  10572  5188 pts/1    Ss+  12:40   0:00 bash
+                  user     1401  0.0  0.0   8116   736 pts/0    S+   12:45   0:00 grep --color=auto bash`;
+          } else if (command === 'touch secret.txt') {
+            return ''; // No output, successful command
+          } else if (command === 'chmod 600 secret.txt') {
+            return ''; // No output, successful command
+          } else if (command === 'ls -l secret.txt') {
+            return '-rw------- 1 user user 0 Feb 27 12:45 secret.txt';
+          } else if (command.startsWith('cd ') || command === 'cd') {
+            return ''; // No output, successful command
+          } else if (command === 'pwd') {
+            return '/home/user';
+          } else if (command === 'clear') {
+            this.terminalTabs[this.activeTerminalTab].content = '';
+            return '';
+          } else {
+            return `Command not found: ${command}`;
+          }
+        },
+
+        addTerminalTab() {
+          const newTabNumber = this.terminalTabs.length + 1;
+          this.terminalTabs.push({
+            name: `Terminal ${newTabNumber}`,
+            content: `<div class="mb-4">
+              <div class="terminal-output">Terminal ${newTabNumber} initialized.</div>
+            </div>`
+          });
+          this.activeTerminalTab = this.terminalTabs.length - 1;
+        },
+
+        checkAnswer() {
+          const currentTaskObj = this.tasks[this.currentTask];
+
+          if (!currentTaskObj.userAnswer) {
+            currentTaskObj.error = 'Please provide an answer';
+            return;
+          }
+
+          if (currentTaskObj.userAnswer.trim().toLowerCase() === currentTaskObj.answer.trim().toLowerCase()) {
+            currentTaskObj.completed = true;
+            currentTaskObj.error = '';
+
+            // Trigger confetti
+            confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 }
+            });
+          } else {
+            currentTaskObj.error = 'That\'s not correct. Try again.';
+          }
+        },
+
+        nextTask() {
+          if (this.currentTask < this.tasks.length - 1) {
+            this.taskTransitioned = false;
+
+            setTimeout(() => {
+              this.currentTask++;
+
+              setTimeout(() => {
+                this.taskTransitioned = true;
+              }, 50);
+            }, 300);
+          }
+        },
+
+        previousTask() {
+          if (this.currentTask > 0) {
+            this.taskTransitioned = false;
+
+            setTimeout(() => {
+              this.currentTask--;
+
+              setTimeout(() => {
+                this.taskTransitioned = true;
+              }, 50);
+            }, 300);
+          }
+        },
+
+        goToTask(index) {
+          if (index !== this.currentTask) {
+            this.taskTransitioned = false;
+
+            setTimeout(() => {
+              this.currentTask = index;
+
+              setTimeout(() => {
+                this.taskTransitioned = true;
+              }, 50);
+            }, 300);
+          }
+        },
+
+        finishCourse() {
+          // Redirect to dashboard with completion status
+          window.location.href = 'dashboard.html?completed=linux-1';
+        }
+      };
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | DevSecOps Academy</title>
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+  <!-- Navigation Bar -->
+  <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-10">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+      <a href="index.html" class="flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        <span class="text-xl font-bold">DevSecOps Academy</span>
+      </a>
+      <div class="flex space-x-6">
+        <a href="index.html" class="hover:text-blue-400 transition-colors">Home</a>
+        <a href="index.html#courses" class="hover:text-blue-400 transition-colors">Courses</a>
+        <a href="#" class="hover:text-blue-400 transition-colors">About</a>
+        <a href="#" class="hover:text-blue-400 transition-colors">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Login Section -->
+  <main class="flex-1 flex items-center justify-center p-4">
+    <div class="max-w-md w-full" x-data="{ tab: 'login' }">
+      <!-- Tabs -->
+      <div class="flex mb-8 bg-gray-800 rounded-lg p-1">
+        <button @click="tab = 'login'"
+                :class="tab === 'login' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:text-white'"
+                class="flex-1 py-2 rounded-md transition-colors font-medium">
+          Log In
+        </button>
+        <button @click="tab = 'register'"
+                :class="tab === 'register' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:text-white'"
+                class="flex-1 py-2 rounded-md transition-colors font-medium">
+          Register
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <div x-show="tab === 'login'" class="bg-gray-800 rounded-lg p-8 shadow-lg border border-gray-700">
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold">Welcome Back</h2>
+          <p class="text-gray-400 mt-1">Sign in to your DevSecOps Academy account</p>
+        </div>
+
+        <form action="dashboard.html">
+          <div class="mb-6">
+            <label for="email" class="block text-sm font-medium text-gray-400 mb-2">Email</label>
+            <input type="email" id="email" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="your.email@example.com" required>
+          </div>
+
+          <div class="mb-6">
+            <div class="flex justify-between items-center mb-2">
+              <label for="password" class="block text-sm font-medium text-gray-400">Password</label>
+              <a href="#" class="text-sm text-blue-400 hover:text-blue-300">Forgot password?</a>
+            </div>
+            <input type="password" id="password" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••" required>
+          </div>
+
+          <div class="flex items-center mb-6">
+            <input type="checkbox" id="remember" class="h-4 w-4 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-offset-gray-800">
+            <label for="remember" class="ml-2 text-sm text-gray-400">Remember me</label>
+          </div>
+
+          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+            Sign In
+          </button>
+        </form>
+
+        <div class="mt-8 pt-6 border-t border-gray-700">
+          <div class="flex items-center justify-center">
+            <span class="text-gray-400 text-sm">Or sign in with</span>
+          </div>
+
+          <div class="mt-4 grid grid-cols-3 gap-3">
+            <button class="bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-md flex items-center justify-center transition-colors">
+              <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.045 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-1.882 17.297h-2.631v-7.711h2.631v7.711zm-1.317-8.764h-.016c-.883 0-1.455-.589-1.455-1.323 0-.747.588-1.315 1.487-1.315.898 0 1.452.578 1.467 1.324.001.735-.569 1.314-1.483 1.314zm7.556 8.764h-2.628v-4.126c0-1.065-.38-1.79-1.328-1.79-.723 0-1.151.489-1.343.962-.068.17-.086.4-.086.639v4.316h-2.628s.033-7.004 0-7.711h2.628v1.095c.349-.526.969-1.273 2.357-1.273 1.718 0 3.004 1.125 3.004 3.543v4.345z"/>
+              </svg>
+            </button>
+            <button class="bg-blue-800 hover:bg-blue-700 text-white py-2 rounded-md flex items-center justify-center transition-colors">
+              <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm3 8h-1.35c-.538 0-.65.221-.65.778v1.222h2l-.209 2h-1.791v7h-3v-7h-2v-2h2v-2.308c0-1.769.931-2.692 3.029-2.692h1.971v3z"/>
+              </svg>
+            </button>
+            <button class="bg-red-700 hover:bg-red-600 text-white py-2 rounded-md flex items-center justify-center transition-colors">
+              <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.045 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-.978 3.013c3.064 0 3.439.014 4.652.067 1.12.051 1.728.237 2.133.394.536.208.919.458 1.321.861.403.402.652.785.861 1.322.157.404.343 1.012.394 2.132.053 1.214.067 1.588.067 4.652s-.014 3.438-.067 4.652c-.051 1.12-.237 1.729-.394 2.132-.208.537-.458.92-.861 1.322-.402.403-.785.653-1.321.861-.405.157-1.013.342-2.133.394-1.213.052-1.588.066-4.652.066-3.064 0-3.438-.014-4.652-.066-1.12-.052-1.728-.237-2.133-.394-.536-.208-.919-.458-1.322-.861-.403-.402-.652-.785-.861-1.322-.157-.403-.343-1.012-.394-2.132-.052-1.214-.066-1.588-.066-4.652s.014-3.438.066-4.652c.051-1.12.237-1.728.394-2.132.209-.537.458-.919.861-1.322.403-.403.786-.653 1.322-.861.405-.157 1.013-.343 2.133-.394 1.214-.053 1.588-.067 4.652-.067zm3.978 1.728c-.734 0-1.33.596-1.33 1.33s.596 1.33 1.33 1.33 1.33-.596 1.33-1.33-.596-1.33-1.33-1.33zm-3 2.259c-2.756 0-5 2.244-5 5s2.244 5 5 5 5-2.244 5-5-2.244-5-5-5zm0 1.74c1.795 0 3.25 1.455 3.25 3.25s-1.455 3.25-3.25 3.25-3.25-1.455-3.25-3.25 1.455-3.25 3.25-3.25z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div x-show="tab === 'register'" class="bg-gray-800 rounded-lg p-8 shadow-lg border border-gray-700">
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold">Create an Account</h2>
+          <p class="text-gray-400 mt-1">Join DevSecOps Academy today</p>
+        </div>
+
+        <form action="dashboard.html">
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label for="first-name" class="block text-sm font-medium text-gray-400 mb-2">First Name</label>
+              <input type="text" id="first-name" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+            </div>
+
+            <div>
+              <label for="last-name" class="block text-sm font-medium text-gray-400 mb-2">Last Name</label>
+              <input type="text" id="last-name" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <label for="register-email" class="block text-sm font-medium text-gray-400 mb-2">Email</label>
+            <input type="email" id="register-email" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="your.email@example.com" required>
+          </div>
+
+          <div class="mb-6">
+            <label for="register-password" class="block text-sm font-medium text-gray-400 mb-2">Password</label>
+            <input type="password" id="register-password" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••" required>
+            <p class="mt-2 text-sm text-gray-400">Password must be at least 8 characters and include at least one uppercase letter, one number, and one special character.</p>
+          </div>
+
+          <div class="mb-6">
+            <label for="confirm-password" class="block text-sm font-medium text-gray-400 mb-2">Confirm Password</label>
+            <input type="password" id="confirm-password" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••" required>
+          </div>
+
+          <div class="flex items-center mb-6">
+            <input type="checkbox" id="terms" class="h-4 w-4 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-offset-gray-800" required>
+            <label for="terms" class="ml-2 text-sm text-gray-400">
+              I agree to the <a href="#" class="text-blue-400 hover:text-blue-300">Terms of Service</a> and <a href="#" class="text-blue-400 hover:text-blue-300">Privacy Policy</a>
+            </label>
+          </div>
+
+          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+            Create Account
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 py-10 mt-auto border-t border-gray-700">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span class="text-xl font-bold">DevSecOps Academy</span>
+          </div>
+        </div>
+        <div class="text-gray-400 text-center md:text-right">
+          <p>&copy; 2025 DevSecOps Academy. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
