@@ -40,6 +40,12 @@ COURSES = {
         'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-linux-3:latest',
         'profile': 'strict',
     },
+    'containers': {
+        'title': 'Container Fundamentals',
+        'description': 'How containers work under the hood - namespaces, cgroups, and the runtime stack.',
+        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-containers:latest',
+        'profile': 'strict',
+    },
     'docker': {
         'title': 'Docker Workshop',
         'description': 'Build small, secure and immutable containers. Multi-stage builds, Trivy scanning, and Hadolint.',
@@ -574,6 +580,8 @@ class TTYController:
             self._check_command_timeout(ws_id, session)
 
             return output
+        except (EOFError, BrokenPipeError, ConnectionResetError, OSError):
+            raise  # Let connection errors propagate to break the read loop
         except Exception as e:
             logger.error("Error reading from container: %s", e)
             return None
@@ -1028,6 +1036,8 @@ class TTYController:
             self._check_shell_command_timeout(ws_id, shell_id, shell)
 
             return output
+        except (EOFError, BrokenPipeError, ConnectionResetError, OSError):
+            raise  # Let connection errors propagate to break the read loop
         except Exception as e:
             logger.error("Error reading from shell %s: %s", shell_id, e)
             return None

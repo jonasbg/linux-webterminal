@@ -663,16 +663,12 @@
 
         // Redirect to course selector when session ends
         socket.on('session_ended', () => {
-            setTimeout(() => { window.location.href = '/'; }, 1500);
+            window.location.href = '/';
         });
 
         socket.on('disconnect', () => {
-            // Only redirect if we had an active session (not on initial load failure)
             if (sessionId) {
-                if (activeTerminal && activeTerminal.term) {
-                    activeTerminal.term.write('\r\nSession ended.\r\n');
-                }
-                setTimeout(() => { window.location.href = '/'; }, 2000);
+                window.location.href = '/';
             }
         });
     </script>

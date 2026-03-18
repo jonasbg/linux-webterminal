@@ -16,7 +16,7 @@ RUN addgroup -g 1000 termuser && \
 RUN mkdir -p /usr/local/bin
 
 # Copy allowed executables and secure system binary locations
-RUN for cmd in sh sed base64 date ps readlink tr stty cat terminfo cd chmod cp echo grep git ssh-keygen head id less ls md5sum cut sed sleep mkdir mv pwd rm tail touch vi vim tput clear wc which whoami; do \
+RUN for cmd in sh sed base64 date ps readlink tr stty cat terminfo cd chmod cp echo grep git ssh-keygen head id less ls md5sum cut sed sleep mkdir mv pwd rm tail touch vi vim tput clear wc which whoami hostname kill; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \
@@ -24,11 +24,10 @@ RUN for cmd in sh sed base64 date ps readlink tr stty cat terminfo cd chmod cp e
         fi; \
     done
 
-# Set up lab environment: git signing repo
-RUN git clone https://github.com/jonasbg/linux-git-signing-repo /home/termuser/signing-project && \
-    mv /home/termuser/signing-project/instructions.md /home/termuser/instructions.md && \
-    mv /home/termuser/signing-project/cheatsheet.md /home/termuser/cheatsheet.md && \
-    chown -R termuser:termuser /home/termuser
+# Copy course materials directly into home
+COPY instruction.md /tmp/instruction.md
+RUN mv /tmp/instruction.md /home/termuser/instruction.md && \
+    chown termuser:termuser /home/termuser/instruction.md
 
 # Configure shell environment
 COPY --chown=root:root <<-'EOF' /home/termuser/.profile

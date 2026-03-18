@@ -18,14 +18,6 @@ jobs:
     - name: Log in to GitHub Container Registry
       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
-    # Build and push the base (client) image
-    - name: Build and push base (client) OCI image
-      run: |
-        BASE_IMAGE="ghcr.io/${{ github.repository }}/terminal-base"
-        BASE_TAG="latest"
-        docker build . -f Dockerfile.base -t $BASE_IMAGE:$BASE_TAG
-        docker push $BASE_IMAGE:$BASE_TAG
-
     # Build and push the server image (depends on the base image)
     - name: Build and push server image
       run: |
@@ -34,3 +26,15 @@ jobs:
         cd src/
         docker build . -f Dockerfile -t $SERVER_IMAGE:$SERVER_TAG
         docker push $SERVER_IMAGE:$SERVER_TAG
+
+    # Build and push all course images
+    - name: Build and push course images
+      run: |
+        for dir in courses/*/; do
+          if [ -f "$dir/Dockerfile" ]; then
+            COURSE_NAME=$(basename "$dir")
+            IMAGE="ghcr.io/${{ github.repository }}/terminal-${COURSE_NAME}"
+            docker build "$dir" -t "$IMAGE:latest"
+            docker push "$IMAGE:latest"
+          fi
+        done
