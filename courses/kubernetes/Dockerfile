@@ -63,7 +63,8 @@ alias grep='/usr/local/bin/grep --color=always'
 export GREP_COLORS='ms=01;31:mc=01;31:sl=:cx=:fn=01;32:ln=01;36:bn=01;33:se=01;35'
 export TERM=xterm-256color
 export LANG=nb_NO.UTF-8
-export EDITOR=/usr/local/bin/vim
+export EDITOR=/usr/local/bin/vi
+export KUBE_EDITOR=/usr/local/bin/vi
 export HOME=/home/termuser
 export LESS=-FRX
 export KUBECONFIG=/home/termuser/.kube/config
