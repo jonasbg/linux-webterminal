@@ -1,17 +1,17 @@
-# Web Terminal
+# DevSecOps Lab
 
-A secure web-based terminal platform that runs isolated containers per course/task. Users pick a task from a landing page and get their own sandboxed shell environment.
+A secure web-based terminal platform that runs isolated containers per course/task. Users pick a task from a landing page and get their own sandboxed shell environment with an integrated guide sidebar.
 
 ## Courses
-
-Each course has its own container image with pre-loaded materials directly in the home directory.
 
 | Course | Profile | Description |
 |--------|---------|-------------|
 | **Linux I** | strict | clmystery command-line challenge |
 | **Linux II** | strict | Git signing - GPG/SSH commit signing |
 | **Linux III** | strict | Process investigation - /proc, PIDs, file descriptors |
+| **Container Fundamentals** | strict | Namespaces, cgroups, and the runtime stack |
 | **Docker Workshop** | relaxed | Podman-in-podman, multi-stage builds, Trivy, Hadolint |
+| **Kubernetes Basics** | strict | Real kubectl against a mock API server |
 
 ## Running locally
 
@@ -24,13 +24,15 @@ Each course has its own container image with pre-loaded materials directly in th
 
 ```bash
 cd courses
-podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-linux-1:latest -f linux-1/Dockerfile linux-1/
-podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest -f linux-2/Dockerfile linux-2/
-podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-linux-3:latest -f linux-3/Dockerfile linux-3/
-podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-docker:latest -f docker/Dockerfile docker/
+podman build -t git.torden.tech/jonasbg/terminal-linux-1:latest -f linux-1/Dockerfile linux-1/
+podman build -t git.torden.tech/jonasbg/terminal-linux-2:latest -f linux-2/Dockerfile linux-2/
+podman build -t git.torden.tech/jonasbg/terminal-linux-3:latest -f linux-3/Dockerfile linux-3/
+podman build -t git.torden.tech/jonasbg/terminal-containers:latest -f containers/Dockerfile containers/
+podman build -t git.torden.tech/jonasbg/terminal-docker:latest -f docker/Dockerfile docker/
+podman build -t git.torden.tech/jonasbg/terminal-kubernetes:latest -f kubernetes/Dockerfile kubernetes/
 ```
 
-Or if you have Docker installed:
+Or with Docker Compose:
 
 ```bash
 cd courses
@@ -39,16 +41,14 @@ docker compose build
 
 ### 2. Run the server
 
-**Option A: Run directly (development)**
+**Development:**
 
 ```bash
 pip install -r requirements-lock.txt
 python app.py
 ```
 
-Server starts on `http://localhost:8080`.
-
-**Option B: Run in a container**
+**Container:**
 
 ```bash
 podman build -t terminal-server .
@@ -60,28 +60,55 @@ podman run -d -p 5000:5000 --name terminal-server \
   terminal-server
 ```
 
-Server starts on `http://localhost:5000`.
+Note: `--security-opt label=disable` is needed on SELinux systems (Fedora, RHEL).
 
-Note: `--security-opt label=disable` is needed on SELinux systems (Fedora, RHEL) for the container to access the Podman socket.
+### 3. Deploy to remote
 
-### 3. Open the landing page
+```bash
+ssh containeruser@10.10.10.168 ~/deploy.sh
+```
 
-Navigate to the server URL. Pick a course, get a terminal. When you exit the shell, you're redirected back to the course selector.
+## Adding course content
+
+### Guide files
+
+Guide files are served from inside the container images. Add paths to the `guides` list in `app.py`:
+
+```python
+'guides': ['/home/termuser/instruction.md', '/home/termuser/cheatsheet.md'],
+```
+
+The terminal page shows a "Guide" sidebar with tabs for each file. Content is extracted from the container image on first request and cached.
+
+### Images in guides
+
+Place images in `courses/<slug>/images/`:
+
+```
+courses/kubernetes/images/architecture.png
+```
+
+Reference in any guide or README markdown:
+
+```markdown
+![Architecture](/api/courses/kubernetes/images/architecture.png)
+```
+
+Images are served directly by the server (not from containers). They render with rounded corners in both the guide sidebar and the landing page preview dialog.
 
 ## Security Profiles
 
-**Strict** (Linux I, Linux II):
+**Strict** (Linux I-III, Container Fundamentals, Kubernetes):
 - No network access
 - Read-only filesystem (64MB tmpfs for /home and /tmp)
 - All capabilities dropped, no-new-privileges
-- 64MB memory limit, 10% CPU, max 10 processes
+- 64MB memory, 10% CPU, 10 PIDs (configurable per course)
 - /proc entries masked
-- Whitelisted commands only
 
 **Relaxed** (Docker Workshop):
-- Bridge networking (needed to pull images)
-- Privileged mode (needed for podman-in-podman)
-- Writable filesystem with tmpfs for /run, /var/lib/containers, /tmp
+- Bridge networking (pull images from registries)
+- Privileged mode (podman-in-podman)
+- Writable filesystem
 - No resource limits
 
 ## Environment Variables
@@ -94,17 +121,3 @@ Navigate to the server URL. Pick a course, get a terminal. When you exit the she
 | `MAX_CONTAINERS` | `10` | Max concurrent containers |
 | `CONTAINER_LIFETIME` | `3600` | Auto-cleanup timeout (seconds) |
 | `PORT` | `8080` | Server listen port |
-
-## Useful Commands
-
-Remove all terminal containers:
-
-```bash
-podman rm -f $(podman ps -a --filter "label=app=web-terminal" -q)
-```
-
-List unique IP addresses from logs:
-
-```bash
-grep -hoP 'Origin IP: \K[\d\.]+' logs/*.log | sort -u
-```

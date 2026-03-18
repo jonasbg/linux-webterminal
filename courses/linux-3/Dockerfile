@@ -30,7 +30,7 @@ COPY cat-wrapper /usr/local/bin/cat
 RUN chmod +x /usr/local/bin/cat
 
 # Set up lab environment: process investigation task
-COPY instructions-task02.md /tmp/instruction.md
+COPY instructions.md /tmp/instruction.md
 RUN mv /tmp/instruction.md /home/termuser/instruction.md && \
     chown termuser:termuser /home/termuser/instruction.md
 

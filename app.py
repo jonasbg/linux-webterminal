@@ -15,7 +15,7 @@ import os
 import docker
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 
 
 # Course definitions: maps slug -> container configuration
@@ -35,7 +35,7 @@ COURSES = {
         'long_description': 'Work with a real git repository to understand commit signing. Learn how GPG and SSH keys are used to verify code authenticity, inspect signed commits, and configure your own signing setup.',
         'image': 'git.torden.tech/jonasbg/terminal-linux-2:latest',
         'profile': 'strict',
-        'guides': ['warmup.md'],
+        'guides': ['/home/termuser/warmup.md', '/home/termuser/instructions.md', '/home/termuser/cheatsheet.md'],
     },
     'linux-3': {
         'title': 'Linux III',
@@ -43,7 +43,7 @@ COURSES = {
         'long_description': 'Dive into the /proc virtual filesystem to understand how Linux manages processes. Inspect PIDs, environment variables, file descriptors, memory maps, and learn how PID namespaces provide container isolation.',
         'image': 'git.torden.tech/jonasbg/terminal-linux-3:latest',
         'profile': 'strict',
-        'guides': ['instructions-task02.md'],
+        'guides': ['/home/termuser/instruction.md'],
     },
     'containers': {
         'title': 'Container Fundamentals',
@@ -51,7 +51,7 @@ COURSES = {
         'long_description': 'Understand what a container really is - just a Linux process with namespaces and cgroups. Experience resource limits firsthand by hitting PID limits, memory caps, and CPU throttling. Learn the runtime stack from runc to containerd to Podman.',
         'image': 'git.torden.tech/jonasbg/terminal-containers:latest',
         'profile': 'strict',
-        'guides': ['instruction.md'],
+        'guides': ['/home/termuser/instruction.md'],
     },
     'docker': {
         'title': 'Docker Workshop',
@@ -59,7 +59,7 @@ COURSES = {
         'long_description': 'Hands-on workshop covering container best practices. Build multi-stage Dockerfiles, compare image sizes across Alpine/Ubuntu/Scratch, scan for vulnerabilities with Trivy, lint with Hadolint, and learn security hardening techniques.',
         'image': 'git.torden.tech/jonasbg/terminal-docker:latest',
         'profile': 'relaxed',
-        'guides': ['instructions.md'],
+        'guides': ['/home/termuser/instructions.md'],
     },
     'kubernetes': {
         'title': 'Kubernetes Basics',
@@ -69,7 +69,7 @@ COURSES = {
         'profile': 'strict',
         'pids_limit': 64,
         'mem_limit': '128m',
-        'guides': ['instruction.md'],
+        'guides': ['/home/termuser/instruction.md'],
     },
 }
 
@@ -1191,22 +1191,47 @@ def api_course_readme(slug):
     return jsonify({'meta': meta, 'body': body})
 
 
+# Cache for guide files extracted from container images
+_guide_cache = {}
+
+
 @app.route('/api/courses/<slug>/files')
 def api_course_files(slug):
     if slug not in COURSES:
         return jsonify([]), 404
     config = COURSES[slug]
-    guide_names = config.get('guides', [])
-    if not guide_names:
+    guide_paths = config.get('guides', [])
+    if not guide_paths:
         return jsonify([])
-    course_dir = os.path.join('courses', slug)
+
+    # Return cached if available
+    if slug in _guide_cache:
+        return jsonify(_guide_cache[slug])
+
+    # Extract files from the container image
+    image = config['image']
     files = []
-    for name in guide_names:
-        filepath = os.path.join(course_dir, name)
-        if os.path.isfile(filepath):
-            with open(filepath, 'r') as f:
-                files.append({'name': name, 'content': f.read()})
+    for path in guide_paths:
+        try:
+            result = tty_controller.client.containers.run(
+                image, f'/usr/local/bin/busybox cat {path}',
+                remove=True, stdout=True, stderr=False
+            )
+            content = result.decode('utf-8', errors='replace')
+            name = os.path.basename(path)
+            files.append({'name': name, 'content': content})
+        except Exception as e:
+            logger.error("Error extracting %s from %s: %s", path, image, e)
+
+    _guide_cache[slug] = files
     return jsonify(files)
+
+
+@app.route('/api/courses/<slug>/images/<path:filename>')
+def api_course_image(slug, filename):
+    if slug not in COURSES:
+        return 'Not found', 404
+    return send_from_directory(os.path.join('courses', slug, 'images'), filename)
 
 
 @socketio.on('connect')

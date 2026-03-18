@@ -423,12 +423,47 @@
             margin: 0 0 0.6rem;
             overflow-x: auto;
         }
+        .guide-content pre {
+            position: relative;
+        }
+
         .guide-content pre code { background: none; color: #6f6; padding: 0; }
+
+        .copy-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: rgba(255,255,255,0.08);
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .guide-content pre:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { color: #fff; background: rgba(255,255,255,0.15); }
+        .copy-btn.copied { color: #6f6; }
+
+        .guide-content code {
+            position: relative;
+        }
+
+        .inline-copy {
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+
+        .inline-copy:hover { color: #fff; }
         .guide-content table { width: 100%; border-collapse: collapse; margin: 0 0 0.6rem; font-size: 0.8rem; }
         .guide-content th, .guide-content td { border: 1px solid #333; padding: 0.3rem 0.5rem; text-align: left; }
         .guide-content th { background: rgba(255,255,255,0.03); color: #ccc; font-weight: 600; }
         .guide-content td { color: #999; }
         .guide-content hr { border: none; border-top: 1px solid #333; margin: 1rem 0; }
+        .guide-content img { max-width: 100%; border-radius: 8px; margin: 0.5rem 0; }
 
         /* File tabs in guide */
         .guide-tabs {
@@ -577,13 +612,48 @@
         function showGuideFile(name, tabEl) {
             const content = guideFiles[name];
             if (!content) return;
-            document.getElementById('guide-content').innerHTML = marked.parse(content);
+            const el = document.getElementById('guide-content');
+            el.innerHTML = marked.parse(content);
+
+            // Add copy buttons to code blocks
+            el.querySelectorAll('pre').forEach(pre => {
+                const btn = document.createElement('button');
+                btn.className = 'copy-btn';
+                btn.innerHTML = '<i class="fa-solid fa-copy"></i>';
+                btn.onclick = () => {
+                    const code = pre.querySelector('code');
+                    navigator.clipboard.writeText(code ? code.textContent : pre.textContent);
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fa-solid fa-copy"></i>';
+                        btn.classList.remove('copied');
+                    }, 1500);
+                };
+                pre.appendChild(btn);
+            });
+
+            // Make inline code clickable to copy
+            el.querySelectorAll('code').forEach(code => {
+                if (code.parentElement.tagName === 'PRE') return; // skip code blocks
+                code.classList.add('inline-copy');
+                code.title = 'Click to copy';
+                code.onclick = () => {
+                    navigator.clipboard.writeText(code.textContent);
+                    const orig = code.style.color;
+                    code.style.color = '#6f6';
+                    setTimeout(() => { code.style.color = orig; }, 800);
+                };
+            });
 
             // Update active tab
             if (tabEl) {
                 document.querySelectorAll('.guide-tab').forEach(t => t.classList.remove('active'));
                 tabEl.classList.add('active');
             }
+
+            // Scroll to top
+            el.scrollTop = 0;
         }
 
         // Guide toggle handled via onclick attribute on the button
@@ -920,7 +990,6 @@
 
         socket.on('container_ready', () => {
             if (activeTerminal && activeTerminal.isFirstTab) {
-                activeTerminal.term.write('Container ready!\r\n\r\n');
                 setTimeout(() => {
                     activeTerminal.fitTerminal();
                 }, 250);
