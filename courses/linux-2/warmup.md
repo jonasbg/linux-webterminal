@@ -40,6 +40,7 @@ There is no verification. No warning. No check. Anyone with write access to a re
 - A disgruntled developer could make commits that look like they came from someone else
 - A compromised CI system could inject code under a trusted developer's name
 - In a code review, you'd see "Linus Torvalds" and might trust it more than you should
+- Git platforms like GitLab and Gitea render the **avatar based on the email address** - a forged commit will show the real person's profile picture, making the impersonation even more convincing
 
 ## Now you're ready
 
