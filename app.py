@@ -25,36 +25,42 @@ COURSES = {
     'linux-1': {
         'title': 'Linux I',
         'description': 'Introduction to Linux command line - file navigation, basic commands, and the clmystery challenge.',
+        'long_description': 'Solve a command-line murder mystery using grep, cat, head, and other basic Linux commands. Learn to navigate the filesystem, search through files, and piece together clues - all from the terminal.',
         'image': 'git.torden.tech/jonasbg/terminal-linux-1:latest',
         'profile': 'strict',
     },
     'linux-2': {
         'title': 'Linux II',
         'description': 'Git signing - learn GPG/SSH commit signing and verification.',
+        'long_description': 'Work with a real git repository to understand commit signing. Learn how GPG and SSH keys are used to verify code authenticity, inspect signed commits, and configure your own signing setup.',
         'image': 'git.torden.tech/jonasbg/terminal-linux-2:latest',
         'profile': 'strict',
     },
     'linux-3': {
         'title': 'Linux III',
         'description': 'Process investigation - explore /proc, PIDs, file descriptors, and namespaces.',
+        'long_description': 'Dive into the /proc virtual filesystem to understand how Linux manages processes. Inspect PIDs, environment variables, file descriptors, memory maps, and learn how PID namespaces provide container isolation.',
         'image': 'git.torden.tech/jonasbg/terminal-linux-3:latest',
         'profile': 'strict',
     },
     'containers': {
         'title': 'Container Fundamentals',
         'description': 'How containers work under the hood - namespaces, cgroups, and the runtime stack.',
+        'long_description': 'Understand what a container really is - just a Linux process with namespaces and cgroups. Experience resource limits firsthand by hitting PID limits, memory caps, and CPU throttling. Learn the runtime stack from runc to containerd to Podman.',
         'image': 'git.torden.tech/jonasbg/terminal-containers:latest',
         'profile': 'strict',
     },
     'docker': {
         'title': 'Docker Workshop',
         'description': 'Build small, secure and immutable containers. Multi-stage builds, Trivy scanning, and Hadolint.',
+        'long_description': 'Hands-on workshop covering container best practices. Build multi-stage Dockerfiles, compare image sizes across Alpine/Ubuntu/Scratch, scan for vulnerabilities with Trivy, lint with Hadolint, and learn security hardening techniques.',
         'image': 'git.torden.tech/jonasbg/terminal-docker:latest',
         'profile': 'relaxed',
     },
     'kubernetes': {
         'title': 'Kubernetes Basics',
         'description': 'Navigate a cluster with the real kubectl binary against a mock API server.',
+        'long_description': 'Use the real kubectl binary against a mock Kubernetes API server with pre-populated cluster data. Explore namespaces, pods, deployments, statefulsets, services, configmaps, secrets, and ArgoCD applications. Edit resources, read logs, and understand that Kubernetes is just an API with a database.',
         'image': 'git.torden.tech/jonasbg/terminal-kubernetes:latest',
         'profile': 'strict',
         'pids_limit': 64,
@@ -1146,9 +1152,37 @@ def api_courses():
             'slug': slug,
             'title': config['title'],
             'description': config['description'],
+            'long_description': config.get('long_description', config['description']),
             'profile': config['profile'],
         })
     return jsonify(courses_list)
+
+
+@app.route('/api/courses/<slug>/readme')
+def api_course_readme(slug):
+    if slug not in COURSES:
+        return jsonify({'error': 'Not found'}), 404
+    readme_path = os.path.join('courses', slug, 'README.md')
+    if not os.path.isfile(readme_path):
+        return jsonify({'error': 'No README'}), 404
+    with open(readme_path, 'r') as f:
+        content = f.read()
+    # Parse YAML frontmatter
+    meta = {}
+    body = content
+    if content.startswith('---'):
+        parts = content.split('---', 2)
+        if len(parts) >= 3:
+            body = parts[2].strip()
+            for line in parts[1].strip().split('\n'):
+                if ':' in line:
+                    key, val = line.split(':', 1)
+                    val = val.strip()
+                    # Parse arrays like [a, b, c]
+                    if val.startswith('[') and val.endswith(']'):
+                        val = [v.strip() for v in val[1:-1].split(',')]
+                    meta[key.strip()] = val
+    return jsonify({'meta': meta, 'body': body})
 
 
 @socketio.on('connect')

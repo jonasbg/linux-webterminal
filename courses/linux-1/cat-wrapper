@@ -1,0 +1,101 @@
+#!/usr/local/bin/sh
+# cat wrapper that pretty-prints markdown files
+# Falls through to real cat for everything else
+
+# If no args or reading stdin, use real cat
+if [ $# -eq 0 ] || [ "$1" = "-" ]; then
+  exec /usr/local/bin/busybox cat "$@"
+fi
+
+# Check for flags - if any flag is passed, use real cat
+case "$1" in
+  -*) exec /usr/local/bin/busybox cat "$@" ;;
+esac
+
+# Check if it's a markdown file
+case "$1" in
+  *.md|*.MD|*.markdown)
+    # Render markdown with ANSI colors
+    BOLD='\033[1m'
+    DIM='\033[2m'
+    BLUE='\033[1;34m'
+    GREEN='\033[1;32m'
+    CYAN='\033[1;36m'
+    YELLOW='\033[1;33m'
+    MAGENTA='\033[1;35m'
+    RESET='\033[0m'
+    INVERT='\033[7m'
+
+    in_code=0
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in
+        '```'*)
+          if [ $in_code -eq 0 ]; then
+            in_code=1
+            lang=$(echo "$line" | sed 's/```//')
+            [ -n "$lang" ] && printf "${DIM}── %s ──${RESET}\n" "$lang" || printf "${DIM}────────${RESET}\n"
+            continue
+          else
+            in_code=0
+            printf "${DIM}────────${RESET}\n"
+            continue
+          fi
+          ;;
+      esac
+
+      if [ $in_code -eq 1 ]; then
+        printf "  ${GREEN}%s${RESET}\n" "$line"
+        continue
+      fi
+
+      case "$line" in
+        '# '*)
+          text=$(echo "$line" | sed 's/^# //')
+          printf "\n${BOLD}${BLUE}${INVERT} %s ${RESET}\n\n" "$text"
+          continue ;;
+        '## '*)
+          text=$(echo "$line" | sed 's/^## //')
+          printf "\n${BOLD}${CYAN}%s${RESET}\n${CYAN}%s${RESET}\n" "$text" "$(echo "$text" | sed 's/./-/g')"
+          continue ;;
+        '### '*)
+          text=$(echo "$line" | sed 's/^### //')
+          printf "\n${BOLD}${YELLOW}%s${RESET}\n" "$text"
+          continue ;;
+        '#### '*)
+          text=$(echo "$line" | sed 's/^#### //')
+          printf "\n${MAGENTA}%s${RESET}\n" "$text"
+          continue ;;
+        '---'*|'***'*|'___'*)
+          printf "${DIM}────────────────────────────────────────${RESET}\n"
+          continue ;;
+        '|'*'|')
+          case "$line" in *'---'*) continue ;; esac
+          printf "${CYAN}%s${RESET}\n" "$line"
+          continue ;;
+        '- '*)
+          text=$(echo "$line" | sed 's/^- //')
+          printf "  ${GREEN}*${RESET} %s\n" "$text"
+          continue ;;
+        '  - '*)
+          text=$(echo "$line" | sed 's/^  - //')
+          printf "    ${DIM}*${RESET} %s\n" "$text"
+          continue ;;
+        [0-9]'. '*)
+          num=$(echo "$line" | cut -c1)
+          text=$(echo "$line" | sed 's/^[0-9]\. //')
+          printf "  ${YELLOW}%s.${RESET} %s\n" "$num" "$text"
+          continue ;;
+      esac
+
+      formatted=$(echo "$line" | \
+        sed "s/\*\*\([^*]*\)\*\*/$(printf "${BOLD}")\1$(printf "${RESET}")/g" | \
+        sed "s/\`\([^\`]*\)\`/$(printf "${GREEN}")\1$(printf "${RESET}")/g")
+      printf "%s\n" "$formatted"
+    done < "$1"
+    printf "\n"
+    ;;
+  *)
+    # Not markdown, use real cat
+    exec /usr/local/bin/busybox cat "$@"
+    ;;
+esac

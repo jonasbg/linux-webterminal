@@ -38,6 +38,11 @@ RUN for cmd in sh sed base64 date ps readlink tr stty cat terminfo cd chmod cp e
         fi; \
     done
 
+# Install markdown-aware cat wrapper
+RUN cp /bin/busybox /usr/local/bin/busybox
+COPY cat-wrapper /usr/local/bin/cat
+RUN chmod +x /usr/local/bin/cat
+
 # Copy mock API server
 COPY --from=builder /app/kube-mock /usr/local/bin/kube-mock
 

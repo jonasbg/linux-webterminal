@@ -1,34 +1,35 @@
+---
+difficulty: Intermediate
+duration: 60-90 min
+tags: [kubernetes, kubectl, pods, deployments, argocd, talos]
+---
+
 # Kubernetes Basics
 
-Learn to navigate a Kubernetes cluster using the real `kubectl` binary against a mock API server.
+Learn to navigate a Kubernetes cluster using the real `kubectl`.
 
-## What's included
+## What you'll learn
 
-- **instruction.md** - Guided walkthrough of kubectl, resources, namespaces, and the API model
-- **kubectl** - Real kubectl binary (v1.31.0)
-- **kube-mock** - Lightweight mock Kubernetes API server with pre-populated cluster data
-- **kubeconfig** - Pre-configured to point at the mock API
+- Kubernetes is just an API server with a database - every resource is a REST object
+- Use `kubectl` to explore namespaces, pods, deployments, services, and more
+- Read logs, edit deployments, create resources from YAML
+- Understand how ConfigMaps and Secrets store configuration
+- Discover that Secrets are base64-encoded, not encrypted
+- Inspect Talos Linux nodes and ArgoCD applications
+- See that every `kubectl` command is just an HTTP request
 
-## Mock cluster contents
+## The cluster
 
-- `kube-system`: coredns pod
-- `default`: nginx deployment (2 pods), nginx service, app-config configmap
-- `production`: api-server deployment (3 pods), postgres statefulset, services, configmaps, secrets
+You're connected to a mock Kubernetes API with realistic data:
 
-## What students learn
+- **3 Talos nodes** (1 control-plane, 2 workers)
+- **Namespaces**: default, kube-system, production, argocd
+- **Workloads**: nginx deployment, PostgreSQL statefulset, API server
+- **Config**: ConfigMaps, Secrets (try decoding them!)
+- **GitOps**: ArgoCD applications with sync/health status
 
-- kubectl get, describe, edit, delete, apply, logs
-- Pods, Deployments, StatefulSets, Services, ConfigMaps, Secrets
-- Namespaces as organizational units
-- The API model: everything is a resource, kubectl is just an HTTP client
-- Secrets are base64, not encrypted
+This uses the **real kubectl binary** - the same commands work on any production cluster.
 
-## Security profile: strict
+## Who is this for?
 
-The mock API server runs on localhost:8080 inside the container. No external network needed.
-
-## Building
-
-```bash
-podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-kubernetes:latest .
-```
+Anyone starting with Kubernetes. You should understand what containers are (take the Container Fundamentals course first if not). No cluster setup needed - just start typing `kubectl`.

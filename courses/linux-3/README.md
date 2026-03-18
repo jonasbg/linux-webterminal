@@ -1,21 +1,26 @@
-# Linux III
+---
+difficulty: Intermediate
+duration: 60-90 min
+tags: [linux, proc, processes, namespaces, debugging]
+---
 
-Process investigation - explore the /proc filesystem, PIDs, file descriptors, and namespaces.
+# Linux III - Process Investigation
 
-## What's included
+Look under the hood of a running Linux system through `/proc`.
 
-- **instruction.md** - Guided walkthrough of /proc, process inspection, environment variables, file descriptors, and PID namespaces
+## What you'll learn
 
-## Security profile: strict
+- How Linux represents every process as files in `/proc`
+- Inspect PIDs, command lines, environment variables, and memory maps
+- Understand parent-child process relationships
+- Work with file descriptors - the foundation of pipes and redirection
+- Discover how PID namespaces provide container isolation
+- Spot secrets leaked through environment variables
 
-- No network access
-- Read-only filesystem (64MB tmpfs for /home and /tmp)
-- All capabilities dropped
-- 64MB memory limit, 10% CPU, max 10 processes
-- Whitelisted commands only
+## The exercises
 
-## Building
+Follow `instruction.md` through 7 guided parts. You'll create processes, inspect them through `/proc`, and understand how Linux manages everything from memory to process trees.
 
-```bash
-podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-linux-3:latest .
-```
+## Who is this for?
+
+Anyone who wants to understand what's really happening when you run a command. Useful for developers debugging applications, ops people investigating issues, or anyone preparing for container/cloud work.

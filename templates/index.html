@@ -21,6 +21,7 @@
     <meta name="description" content="Hands-on Linux, containers, Docker, and Kubernetes - right in your browser. Each task spins up its own sandboxed terminal environment." />
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
             --bg-color: #0f0f0f;
@@ -56,18 +57,9 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
+        .header h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
         .header h1 i { color: var(--primary); margin-right: 0.5rem; }
-
-        .header p {
-            color: var(--text-muted);
-            font-size: 1rem;
-        }
+        .header p { color: var(--text-muted); font-size: 1rem; }
 
         .courses {
             display: grid;
@@ -88,21 +80,10 @@
             transition: background 0.2s, border-color 0.2s;
         }
 
-        .course-card:hover {
-            background: var(--card-hover);
-            border-color: var(--primary);
-        }
-
-        .course-card .icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        .course-card h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
+        .course-card { cursor: pointer; }
+        .course-card:hover { background: var(--card-hover); border-color: var(--primary); }
+        .course-card .icon { font-size: 2rem; margin-bottom: 1rem; }
+        .course-card h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
 
         .course-card p {
             color: var(--text-muted);
@@ -123,34 +104,195 @@
             letter-spacing: 0.05em;
         }
 
-        .badge-strict {
-            background: rgba(34, 197, 94, 0.15);
-            color: var(--green);
+        .badge-strict { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+        .badge-relaxed { background: rgba(245, 158, 11, 0.15); color: var(--orange); }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: flex-end;
         }
 
-        .badge-relaxed {
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--orange);
-        }
-
-        .start-btn {
+        .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: var(--primary);
-            color: #fff;
+            padding: 0.65rem 1.25rem;
             border: none;
             border-radius: 8px;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 500;
             cursor: pointer;
             text-decoration: none;
             transition: background 0.2s;
         }
 
-        .start-btn:hover { background: var(--primary-hover); }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-ghost { background: transparent; color: var(--text-muted); padding: 0.65rem 0.75rem; }
+        .btn-ghost:hover { color: var(--text-color); }
+
+        /* Dialog */
+        .dialog-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dialog-overlay.open { display: flex; }
+
+        .dialog {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .dialog-header {
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .dialog-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .dialog-header .icon { font-size: 1.5rem; }
+        .dialog-header h2 { font-size: 1.3rem; font-weight: 700; }
+
+        .dialog-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .dialog-close:hover { color: var(--text-color); }
+
+        .dialog-inner {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .dialog-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .dialog-body .loading {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .dialog-sidebar {
+            width: 200px;
+            flex-shrink: 0;
+            padding: 1.5rem;
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .dialog-sidebar .badge { display: inline-block; }
+
+        .dialog-sidebar .meta {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .dialog-sidebar .meta i {
+            width: 1rem;
+            text-align: center;
+            margin-right: 0.25rem;
+        }
+
+        .dialog-sidebar .start-area { margin-top: auto; }
+
+        .dialog-sidebar .btn-primary { width: 100%; }
+
+        .dialog-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.75rem;
+        }
+
+        .tag {
+            background: rgba(74, 158, 255, 0.1);
+            color: var(--primary);
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+        }
+
+        /* Markdown content styling */
+        .md-content h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 1rem; color: var(--primary); }
+        .md-content h2 { font-size: 1.15rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--text-color); }
+        .md-content h3 { font-size: 1rem; font-weight: 600; margin: 1rem 0 0.5rem; color: var(--text-muted); }
+        .md-content p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin: 0 0 0.75rem; }
+        .md-content ul, .md-content ol { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin: 0 0 0.75rem; padding-left: 1.5rem; }
+        .md-content li { margin-bottom: 0.25rem; }
+        .md-content code {
+            background: rgba(74, 158, 255, 0.1);
+            color: var(--primary);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+        .md-content pre {
+            background: #111;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin: 0 0 0.75rem;
+            overflow-x: auto;
+        }
+        .md-content pre code {
+            background: none;
+            color: var(--green);
+            padding: 0;
+        }
+        .md-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 0.75rem;
+            font-size: 0.85rem;
+        }
+        .md-content th, .md-content td {
+            border: 1px solid var(--border);
+            padding: 0.4rem 0.6rem;
+            text-align: left;
+        }
+        .md-content th { background: rgba(255,255,255,0.03); color: var(--text-color); font-weight: 600; }
+        .md-content td { color: var(--text-muted); }
+        .md-content strong { color: var(--text-color); }
+        .md-content hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
 
         .footer {
             padding: 2rem;
@@ -162,6 +304,10 @@
         @media (max-width: 600px) {
             .courses { grid-template-columns: 1fr; padding: 1rem; }
             .header { padding: 1.5rem 1rem 1rem; }
+            .dialog { width: 95%; max-height: 90vh; }
+            .dialog-inner { flex-direction: column; }
+            .dialog-sidebar { width: 100%; border-left: none; border-top: 1px solid var(--border); flex-direction: row; align-items: center; }
+            .dialog-sidebar .start-area { margin-top: 0; }
         }
     </style>
 </head>
@@ -171,8 +317,36 @@
         <p>Choose a task to get started. Each task spins up its own sandboxed environment.</p>
     </div>
 
-    <div class="courses" id="courses">
-        <!-- Populated by JS -->
+    <div class="courses" id="courses"></div>
+
+    <div class="dialog-overlay" id="dialog-overlay">
+        <div class="dialog">
+            <div class="dialog-header">
+                <div class="dialog-header-left">
+                    <div class="icon" id="dialog-icon"></div>
+                    <h2 id="dialog-title"></h2>
+                </div>
+                <button class="dialog-close" onclick="closeDialog()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="dialog-inner">
+                <div class="dialog-body">
+                    <div id="dialog-content" class="md-content">
+                        <p class="loading">Loading...</p>
+                    </div>
+                </div>
+                <div class="dialog-sidebar">
+                    <div>
+                        <span class="badge" id="dialog-badge"></span>
+                        <div class="meta" id="dialog-meta"></div>
+                    </div>
+                    <div class="start-area">
+                        <a class="btn btn-primary" id="dialog-start" href="#">
+                            <i class="fa-solid fa-play"></i> Start
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="footer">
@@ -188,6 +362,78 @@
             'kubernetes': 'fa-solid fa-dharmachakra',
             'docker': 'fa-brands fa-docker',
         };
+
+        // Cache fetched READMEs
+        const readmeCache = {};
+
+        function openDialog(course) {
+            const icon = ICONS[course.slug] || 'fa-solid fa-terminal';
+            const badgeClass = course.profile === 'strict' ? 'badge-strict' : 'badge-relaxed';
+            const badgeLabel = course.profile === 'strict' ? 'Sandboxed' : 'Full Access';
+
+            document.getElementById('dialog-icon').innerHTML = `<i class="${icon}"></i>`;
+            document.getElementById('dialog-title').textContent = course.title;
+            document.getElementById('dialog-badge').className = `badge ${badgeClass}`;
+            document.getElementById('dialog-badge').textContent = badgeLabel;
+            document.getElementById('dialog-meta').innerHTML =
+                `<p><i class="fa-solid fa-shield-halved"></i> ${badgeLabel}</p>` +
+                `<p><i class="fa-solid fa-clock"></i> Resets on exit</p>`;
+            document.getElementById('dialog-start').href = `/terminal?course=${course.slug}`;
+            document.getElementById('dialog-overlay').classList.add('open');
+
+            const contentEl = document.getElementById('dialog-content');
+
+            if (readmeCache[course.slug]) {
+                contentEl.innerHTML = readmeCache[course.slug].html;
+                renderMeta(readmeCache[course.slug].meta, course);
+                return;
+            }
+
+            contentEl.innerHTML = '<p class="loading">Loading...</p>';
+            fetch(`/api/courses/${course.slug}/readme`)
+                .then(r => {
+                    if (!r.ok) throw new Error('No README');
+                    return r.json();
+                })
+                .then(data => {
+                    const html = marked.parse(data.body);
+                    readmeCache[course.slug] = { html, meta: data.meta };
+                    contentEl.innerHTML = html;
+                    renderMeta(data.meta, course);
+                })
+                .catch(() => {
+                    contentEl.innerHTML = `<p>${course.long_description || course.description}</p>`;
+                });
+        }
+
+        function renderMeta(meta, course) {
+            const metaEl = document.getElementById('dialog-meta');
+            let html = '';
+            if (meta.difficulty) {
+                html += `<p><i class="fa-solid fa-signal"></i> ${meta.difficulty}</p>`;
+            }
+            if (meta.duration) {
+                html += `<p><i class="fa-solid fa-clock"></i> ${meta.duration}</p>`;
+            }
+            if (meta.tags && Array.isArray(meta.tags)) {
+                html += '<div class="dialog-tags">' +
+                    meta.tags.map(t => `<span class="tag">${t}</span>`).join('') +
+                    '</div>';
+            }
+            metaEl.innerHTML = html;
+        }
+
+        function closeDialog() {
+            document.getElementById('dialog-overlay').classList.remove('open');
+        }
+
+        document.getElementById('dialog-overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeDialog();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeDialog();
+        });
 
         fetch('/api/courses')
             .then(r => r.json())
@@ -205,10 +451,16 @@
                         <span class="badge ${badgeClass}">${badgeLabel}</span>
                         <h2>${c.title}</h2>
                         <p>${c.description}</p>
-                        <a href="/terminal?course=${c.slug}" class="start-btn">
-                            <i class="fa-solid fa-play"></i> Start
-                        </a>
+                        <div class="card-actions">
+                            <button class="btn btn-ghost" onclick="event.stopPropagation(); openDialog(courses.find(x => x.slug === '${c.slug}'))" title="More info">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
+                            <a href="/terminal?course=${c.slug}" class="btn btn-primary" onclick="event.stopPropagation()">
+                                <i class="fa-solid fa-play"></i> Start
+                            </a>
+                        </div>
                     `;
+                    card.addEventListener('click', () => openDialog(c));
                     container.appendChild(card);
                 });
             });

@@ -34,6 +34,11 @@ RUN for cmd in sh conmon crun newuidmap newgidmap sed base64 date ps readlink tr
     done && \
     chmod u+s /usr/local/bin/newuidmap /usr/local/bin/newgidmap
 
+# Install markdown-aware cat wrapper
+RUN cp /bin/busybox /usr/local/bin/busybox
+COPY cat-wrapper /usr/local/bin/cat
+RUN chmod +x /usr/local/bin/cat
+
 # Install Trivy (arch-aware)
 COPY install_trivy.sh /tmp/install_trivy.sh
 RUN chmod +x /tmp/install_trivy.sh && /tmp/install_trivy.sh && rm /tmp/install_trivy.sh

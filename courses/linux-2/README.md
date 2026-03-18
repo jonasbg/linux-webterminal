@@ -1,21 +1,25 @@
-# Linux II
+---
+difficulty: Intermediate
+duration: 45-60 min
+tags: [git, gpg, ssh, security, signing]
+---
 
-Git signing - learn GPG/SSH commit signing and verification.
+# Linux II - Git Commit Signing
 
-## What's included
+Learn how to verify that code really comes from who it claims to.
 
-- **git-signing/** - A repository for practicing GPG and SSH commit signing
+## What you'll learn
 
-## Security profile: strict
+- How GPG and SSH keys work for signing git commits
+- Inspect signed vs unsigned commits in a real repository
+- Understand the `allowed_signers` file and trust model
+- Configure git to sign your own commits
+- Why commit signing matters for supply chain security
 
-- No network access
-- Read-only filesystem (64MB tmpfs for /home and /tmp)
-- All capabilities dropped
-- 64MB memory limit, 10% CPU, max 10 processes
-- Whitelisted commands only
+## The setup
 
-## Building
+You have a real git repository in `signing-project/` with a mix of signed and unsigned commits. The `instructions.md` and `cheatsheet.md` files walk you through everything step by step.
 
-```bash
-podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest .
-```
+## Who is this for?
+
+Developers who use git daily but haven't set up commit signing yet. You should be comfortable with basic git commands (`log`, `show`, `diff`).

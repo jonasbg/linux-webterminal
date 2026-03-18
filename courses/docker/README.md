@@ -1,32 +1,28 @@
+---
+difficulty: Intermediate
+duration: 2-3 hours
+tags: [docker, podman, dockerfile, trivy, hadolint, security]
+---
+
 # Docker Workshop
 
-Build small, secure and immutable containers. Multi-stage builds, Trivy scanning, and Hadolint linting.
+Build containers the right way - small, secure, and immutable.
 
-## What's included
+## What you'll learn
 
-- **instructions.md** - Full workshop guide (7 parts, ~2.5 hours)
-- **Dockerfile** - Multi-stage build example (Alpine, Ubuntu, Go, Scratch) that students work with
-- **Trivy** - Pre-installed vulnerability scanner
+- Write multi-stage Dockerfiles that produce minimal images
+- Compare image sizes: Alpine vs Ubuntu vs Go builder vs Scratch
+- Scan images for vulnerabilities using **Trivy**
+- Lint Dockerfiles with **Hadolint** for best practices
+- Understand container immutability and why it matters
+- Security hardening: non-root users, capability dropping, read-only filesystems
 
-## Workshop topics
+## The workshop
 
-1. Container fundamentals
-2. Multi-stage Dockerfile exploration
-3. Container size comparison
-4. Vulnerability scanning with Trivy
-5. Dockerfile linting with Hadolint
-6. Container immutability
-7. Security hardening best practices
+You have a multi-stage `Dockerfile` in your home directory. The `instructions.md` walks you through 7 parts where you build images, compare sizes, scan for CVEs, and apply security best practices.
 
-## Security profile: relaxed
+This environment has full container access - you can run `podman build`, `podman run`, and pull images from registries.
 
-This course requires a relaxed security profile because students need to:
-- Run `podman build` and `podman run` inside the container
-- Pull images from registries (network access required)
-- Use privileged mode for podman-in-podman
+## Who is this for?
 
-## Building
-
-```bash
-podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-docker:latest .
-```
+Developers and ops people who write Dockerfiles but want to level up from "it works" to "it's production-ready." You should be comfortable with basic Docker/Podman commands.
