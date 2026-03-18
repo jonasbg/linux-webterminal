@@ -294,7 +294,7 @@
             height: 32px;
             padding: 0 12px;
             background-color: transparent;
-            border: 1px solid var(--border-color);
+            border: none;
             color: var(--text-color);
             font-size: 12px;
             font-family: var(--font-ui);
@@ -304,7 +304,15 @@
         }
 
         .guide-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
-        .guide-btn.active { background-color: var(--primary-color); border-color: var(--primary-color); }
+
+        .guide-btn .chevron {
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+        .guide-btn.active .chevron {
+            transform: rotate(180deg);
+        }
 
         /* Main layout: terminal + sidebar */
         .main-area {
@@ -325,8 +333,7 @@
         .guide-sidebar {
             width: 0;
             overflow: hidden;
-            background: #111;
-            border-left: 1px solid var(--border-color);
+            background: var(--bg-color);
             display: flex;
             flex-direction: column;
             transition: width 0.2s ease;
@@ -343,21 +350,22 @@
 
         .guide-drag {
             position: absolute;
+            left: 0;
             top: 0;
             bottom: 0;
-            width: 5px;
+            width: 4px;
             cursor: col-resize;
             z-index: 10;
             background: transparent;
+            transition: background 0.15s;
         }
 
         .guide-drag:hover, .guide-drag.active {
-            background: var(--primary-color);
+            background: rgba(74, 158, 255, 0.4);
         }
 
         .guide-header {
             padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -426,9 +434,9 @@
         .guide-tabs {
             display: flex;
             gap: 0;
-            border-bottom: 1px solid var(--border-color);
             flex-shrink: 0;
             overflow-x: auto;
+            padding: 0 1rem;
         }
 
         .guide-tab {
@@ -459,7 +467,7 @@
             </button>
             <div class="tab-bar-right">
                 <button class="guide-btn" id="guide-toggle" title="Toggle instructions" onclick="toggleGuide()">
-                    <i class="fa-solid fa-book-open"></i> Guide
+                    Guide <i class="fa-solid fa-chevron-left chevron"></i>
                 </button>
             </div>
         </div>
