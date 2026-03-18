@@ -4,7 +4,7 @@ Introduction to the Linux command line.
 
 ## What's included
 
-- **clmystery** - A command-line murder mystery game. Navigate the filesystem, use `grep`, `cat`, `head`, and other basic commands to solve the crime.
+The clmystery files are placed directly in the home directory. Students use `grep`, `cat`, `head`, and other basic commands to solve a command-line murder mystery.
 
 ## Security profile: strict
 
@@ -17,5 +17,5 @@ Introduction to the Linux command line.
 ## Building
 
 ```bash
-docker build -t terminal-linux-1 .
+podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-linux-1:latest .
 ```

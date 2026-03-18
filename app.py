@@ -30,8 +30,14 @@ COURSES = {
     },
     'linux-2': {
         'title': 'Linux II',
-        'description': 'Advanced Linux - process investigation, /proc filesystem, and git signing.',
+        'description': 'Git signing - learn GPG/SSH commit signing and verification.',
         'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest',
+        'profile': 'strict',
+    },
+    'linux-3': {
+        'title': 'Linux III',
+        'description': 'Process investigation - explore /proc, PIDs, file descriptors, and namespaces.',
+        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-linux-3:latest',
         'profile': 'strict',
     },
     'docker': {
@@ -550,7 +556,7 @@ class TTYController:
 
             data = socket._sock.recv(4096)
             if not data:
-                return None
+                raise EOFError("Shell exited")
 
             output = data.decode('utf-8', errors='replace')
 
@@ -1004,7 +1010,7 @@ class TTYController:
 
             data = socket._sock.recv(4096)
             if not data:
-                return None
+                raise EOFError("Shell exited")
 
             output = data.decode('utf-8', errors='replace')
 
@@ -1143,13 +1149,15 @@ def handle_start_session(data):
                     try:
                         output = tty_controller.read_from_container(ws_id)
                         if output:
-                            # Emit as both the traditional way and the new shell way
                             socketio.emit(
                                 'output', {'output': output}, room=user_id)
                     except Exception as e:
                         logger.error("Error in read loop: %s", e)
                         break
                     socketio.sleep(0.05)
+                # Main shell exited - notify client
+                logger.info("Main shell exited for session %s, notifying client", ws_id)
+                socketio.emit('session_ended', {}, room=user_id)
 
         socketio.start_background_task(read_output, ws_id, user_id)
 

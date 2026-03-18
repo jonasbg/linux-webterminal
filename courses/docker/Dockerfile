@@ -8,7 +8,8 @@ RUN apk add --no-cache \
     ncurses-terminfo \
     ncurses-terminfo-base \
     podman \
-    shadow shadow-uidmap
+    shadow shadow-uidmap \
+    curl tar
 
 # Create non-root user first
 RUN addgroup -g 1000 termuser && \
@@ -24,7 +25,7 @@ RUN mkdir -p /usr/local/bin /home/termuser/.local/share/containers/storage && \
     chmod -R 755 /home/termuser/.local
 
 # Copy allowed executables and secure system binary locations
-RUN for cmd in sh conmon crun newuidmap newgidmap sed base64 date ps readlink tr stty cat terminfo cd chmod cp echo grep git ssh-keygen head id less ls md5sum cut sed sleep mkdir mv pwd rm tail touch vi vim tput clear wc which whoami podman; do \
+RUN for cmd in sh conmon crun newuidmap newgidmap sed base64 date ps readlink tr stty cat terminfo cd chmod cp echo grep git ssh-keygen head id less ls md5sum cut sed sleep mkdir mv pwd rm tail touch vi vim tput clear wc which whoami podman curl tar; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \
@@ -33,12 +34,14 @@ RUN for cmd in sh conmon crun newuidmap newgidmap sed base64 date ps readlink tr
     done && \
     chmod u+s /usr/local/bin/newuidmap /usr/local/bin/newgidmap
 
+# Install Trivy (arch-aware)
+COPY install_trivy.sh /tmp/install_trivy.sh
+RUN chmod +x /tmp/install_trivy.sh && /tmp/install_trivy.sh && rm /tmp/install_trivy.sh
+
 # Copy workshop materials into the image
 COPY instructions.md /home/termuser/instructions.md
-COPY exercise/Dockerfile /home/termuser/exercise/Dockerfile
-COPY install_trivy.sh /home/termuser/install_trivy.sh
-RUN chmod +x /home/termuser/install_trivy.sh && \
-    chown -R termuser:termuser /home/termuser/instructions.md /home/termuser/exercise /home/termuser/install_trivy.sh
+COPY workshop.Dockerfile /home/termuser/Dockerfile
+RUN chown termuser:termuser /home/termuser/instructions.md /home/termuser/Dockerfile
 
 # Configure Podman storage for rootless execution
 USER termuser

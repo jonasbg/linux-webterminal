@@ -24,24 +24,9 @@ RUN for cmd in sh sed base64 date ps readlink tr stty cat terminfo cd chmod cp e
         fi; \
     done
 
-# Set up lab environment: clmystery (reference from Linux I)
-RUN mkdir -p /home/termuser/"01. Linux I" && \
-    cd /home/termuser/"01. Linux I" && \
-    git clone https://github.com/veltman/clmystery . && \
-    rm -rf .git && \
-    chown -R termuser:termuser /home/termuser/"01. Linux I" && \
-    chmod -R 544 /home/termuser/"01. Linux I"
-
-# Set up lab environment: git signing repo
-RUN mkdir -p /home/termuser/"02. Linux II" && \
-    git clone https://github.com/jonasbg/linux-git-signing-repo /home/termuser/"02. Linux II" && \
-    chown -R termuser:termuser /home/termuser/"02. Linux II"
-
-# Set up lab environment: process investigation task
-RUN mkdir -p "/home/termuser/03. Linux II"
-COPY instructions-task02.md /tmp/instruction.md
-RUN mv /tmp/instruction.md "/home/termuser/03. Linux II/instruction.md" && \
-    chown -R termuser:termuser "/home/termuser/03. Linux II"
+# Set up lab environment: git signing repo directly in home
+RUN git clone https://github.com/jonasbg/linux-git-signing-repo /home/termuser/git-signing && \
+    chown -R termuser:termuser /home/termuser/git-signing
 
 # Configure shell environment
 COPY --chown=root:root <<-'EOF' /home/termuser/.profile

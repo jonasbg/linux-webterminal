@@ -9,6 +9,11 @@ services:
       context: ./linux-2
     image: ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest
 
+  linux-3:
+    build:
+      context: ./linux-3
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-linux-3:latest
+
   docker:
     build:
       context: ./docker

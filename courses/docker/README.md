@@ -5,8 +5,8 @@ Build small, secure and immutable containers. Multi-stage builds, Trivy scanning
 ## What's included
 
 - **instructions.md** - Full workshop guide (7 parts, ~2.5 hours)
-- **exercise/Dockerfile** - Multi-stage build example (Alpine, Ubuntu, Go, Scratch)
-- **install_trivy.sh** - Script to install Trivy vulnerability scanner
+- **Dockerfile** - Multi-stage build example (Alpine, Ubuntu, Go, Scratch) that students work with
+- **Trivy** - Pre-installed vulnerability scanner
 
 ## Workshop topics
 
@@ -28,5 +28,5 @@ This course requires a relaxed security profile because students need to:
 ## Building
 
 ```bash
-docker build -t terminal-docker .
+podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-docker:latest .
 ```

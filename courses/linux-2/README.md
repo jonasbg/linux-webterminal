@@ -1,12 +1,10 @@
 # Linux II
 
-Advanced Linux - process investigation, /proc filesystem, and git signing.
+Git signing - learn GPG/SSH commit signing and verification.
 
 ## What's included
 
-- **01. Linux I/** - clmystery (reference material from Linux I)
-- **02. Linux II/** - Git signing repository for learning GPG/SSH commit signing
-- **03. Linux II/** - Process investigation task: explore `/proc`, PIDs, file descriptors, namespaces
+- **git-signing/** - A repository for practicing GPG and SSH commit signing
 
 ## Security profile: strict
 
@@ -19,5 +17,5 @@ Advanced Linux - process investigation, /proc filesystem, and git signing.
 ## Building
 
 ```bash
-docker build -t terminal-linux-2 .
+podman build -t ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest .
 ```
