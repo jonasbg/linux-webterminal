@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine AS builder
+FROM docker.io/library/golang:1.22-alpine AS builder
 WORKDIR /app
 COPY go.mod main.go ./
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o kube-mock .

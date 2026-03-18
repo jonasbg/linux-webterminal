@@ -25,37 +25,37 @@ COURSES = {
     'linux-1': {
         'title': 'Linux I',
         'description': 'Introduction to Linux command line - file navigation, basic commands, and the clmystery challenge.',
-        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-linux-1:latest',
+        'image': 'git.torden.tech/jonasbg/terminal-linux-1:latest',
         'profile': 'strict',
     },
     'linux-2': {
         'title': 'Linux II',
         'description': 'Git signing - learn GPG/SSH commit signing and verification.',
-        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest',
+        'image': 'git.torden.tech/jonasbg/terminal-linux-2:latest',
         'profile': 'strict',
     },
     'linux-3': {
         'title': 'Linux III',
         'description': 'Process investigation - explore /proc, PIDs, file descriptors, and namespaces.',
-        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-linux-3:latest',
+        'image': 'git.torden.tech/jonasbg/terminal-linux-3:latest',
         'profile': 'strict',
     },
     'containers': {
         'title': 'Container Fundamentals',
         'description': 'How containers work under the hood - namespaces, cgroups, and the runtime stack.',
-        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-containers:latest',
+        'image': 'git.torden.tech/jonasbg/terminal-containers:latest',
         'profile': 'strict',
     },
     'docker': {
         'title': 'Docker Workshop',
         'description': 'Build small, secure and immutable containers. Multi-stage builds, Trivy scanning, and Hadolint.',
-        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-docker:latest',
+        'image': 'git.torden.tech/jonasbg/terminal-docker:latest',
         'profile': 'relaxed',
     },
     'kubernetes': {
         'title': 'Kubernetes Basics',
         'description': 'Navigate a cluster with the real kubectl binary against a mock API server.',
-        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-kubernetes:latest',
+        'image': 'git.torden.tech/jonasbg/terminal-kubernetes:latest',
         'profile': 'strict',
         'pids_limit': 64,
         'mem_limit': '128m',
@@ -454,7 +454,7 @@ class TTYController:
                 course_config = COURSES.get(course, {}) if course else {}
                 profile = course_config.get('profile', 'strict')
                 image = course_config.get('image') or os.environ.get(
-                    'CONTAINER_IMAGE', 'ghcr.io/jonasbg/linux-webterminal/terminal-base:latest')
+                    'CONTAINER_IMAGE', 'git.torden.tech/jonasbg/terminal-linux-1:latest')
 
                 # Build per-course overrides for resource limits
                 overrides = {}
