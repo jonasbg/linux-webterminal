@@ -35,6 +35,11 @@ RUN git clone https://github.com/jonasbg/linux-git-signing-repo /home/termuser/s
     mv /home/termuser/signing-project/cheatsheet.md /home/termuser/cheatsheet.md && \
     chown -R termuser:termuser /home/termuser
 
+# Add warmup exercise (impersonation demo)
+COPY warmup.md /tmp/warmup.md
+RUN mv /tmp/warmup.md /home/termuser/warmup.md && \
+    chown termuser:termuser /home/termuser/warmup.md
+
 # Configure shell environment
 COPY --chown=root:root <<-'EOF' /home/termuser/.profile
 # Set restricted PATH

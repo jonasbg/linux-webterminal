@@ -25,7 +25,7 @@ Signed commits solve this by attaching a cryptographic signature that can only b
 
 ## The setup
 
-You have a real git repository in `signing-project/` with a mix of signed and unsigned commits. The `instructions.md` and `cheatsheet.md` files walk you through everything step by step.
+Start with `cat warmup.md` - a quick exercise where you impersonate Linus Torvalds in a git commit and see how easy it is. Then move on to `instructions.md` for the main investigation: a real git repository in `signing-project/` with a mix of signed and unsigned commits, some of which may not be from who they claim. The `cheatsheet.md` has all the commands you'll need.
 
 ## Who is this for?
 
