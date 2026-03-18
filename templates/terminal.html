@@ -603,7 +603,12 @@
 
         socket.on('session_id', (data) => {
             sessionId = data.id;
-            socket.emit('start_session', { id: sessionId });
+            // Pass course slug from URL query param if present
+            const urlParams = new URLSearchParams(window.location.search);
+            const course = urlParams.get('course');
+            const startData = { id: sessionId };
+            if (course) startData.course = course;
+            socket.emit('start_session', startData);
         });
 
         socket.on('container_ready', () => {

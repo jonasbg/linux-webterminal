@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 # Create user with same UID as the host user running podman
 RUN groupadd -g 1001 appuser && \
@@ -9,8 +9,8 @@ RUN groupadd -g 1001 appuser && \
 WORKDIR /app
 
 # Copy requirements first to leverage Docker cache
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-lock.txt .
+RUN pip install --no-cache-dir -r requirements-lock.txt
 
 # Copy application code
 COPY . .

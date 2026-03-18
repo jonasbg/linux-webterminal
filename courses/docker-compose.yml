@@ -1,0 +1,15 @@
+services:
+  linux-1:
+    build:
+      context: ./linux-1
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-linux-1:latest
+
+  linux-2:
+    build:
+      context: ./linux-2
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest
+
+  docker:
+    build:
+      context: ./docker
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-docker:latest

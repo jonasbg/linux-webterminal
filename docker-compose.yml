@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   terminal-server:
     build:
@@ -21,9 +19,8 @@ services:
     environment:
       - HOST=shell.nhn.one
       - TTY_LOGGING_ENABLED=true
-      - MAX_CONTAINERS=50  # Limit total number of containers
-      - CONTAINER_LIFETIME=10800  # Container lifetime in seconds (3 hours)
-      - CONTAINER_IMAGE=terminal-base
+      - MAX_CONTAINERS=50
+      - CONTAINER_LIFETIME=10800
     ports:
       - "5001:5000"
     deploy:

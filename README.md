@@ -1,62 +1,94 @@
 # Web Terminal
 
-A secure web-based terminal that runs commands in isolated Docker containers.
+A secure web-based terminal platform that runs isolated containers per course/task. Users pick a task from a landing page and get their own sandboxed shell environment.
 
-## Quick Reference Commands
+## Courses
 
-### Docker Commands
+Each course has its own container image with pre-loaded materials and a security profile.
 
-Build the base image for a specific platform:
+| Course | Profile | Description |
+|--------|---------|-------------|
+| **Linux I** | strict | clmystery command-line challenge |
+| **Linux II** | strict | Process investigation, /proc, git signing |
+| **Docker Workshop** | relaxed | Podman-in-podman, multi-stage builds, Trivy, Hadolint |
+
+### Building course images
 
 ```bash
-docker build --platform "linux/amd64" -t terminal-base:latest --file Dockerfile.base .
+cd courses
+docker compose build
 ```
 
-Remove all containers based on Alpine image:
+This builds all three images:
+- `ghcr.io/jonasbg/linux-webterminal/terminal-linux-1:latest`
+- `ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest`
+- `ghcr.io/jonasbg/linux-webterminal/terminal-docker:latest`
 
-```bash
-docker rm -f $(docker ps -a --filter "ancestor=terminal-base" -q)
-```
-
-Build the container for running the server
+### Building the server
 
 ```bash
 docker build -t terminal-server .
 ```
 
-Run the server in docker
+### Running
 
 ```bash
-docker run -p 5001:5000 --rm -it -v /var/run/docker.sock:/var/run/docker.sock --name terminal-server terminal-server
+# Start the server (uses docker-compose.yml in project root)
+docker compose up -d
+
+# Or run directly
+docker run -p 5000:5000 --rm -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --name terminal-server terminal-server
 ```
 
-List all uniq IP addresses from your logs:
+Then open `http://localhost:5000` to see the landing page.
+
+### Running for development
+
+```bash
+pip install -r requirements-lock.txt
+python app.py
+```
+
+## Security Profiles
+
+**Strict** (Linux I, Linux II):
+- No network access
+- Read-only filesystem (64MB tmpfs for /home and /tmp)
+- All capabilities dropped, no-new-privileges
+- 64MB memory limit, 10% CPU, max 10 processes
+- /proc entries masked
+- Whitelisted commands only
+
+**Relaxed** (Docker Workshop):
+- Bridge networking (needed to pull images)
+- Privileged mode (needed for podman-in-podman)
+- Writable filesystem with tmpfs for /run, /var/lib/containers, /tmp
+- No resource limits
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HOST` | `*` | CORS allowed origins |
+| `TTY_LOGGING_ENABLED` | `false` | Enable terminal session logging |
+| `TTY_LOG_DIR` | `./logs` | Log directory |
+| `MAX_CONTAINERS` | `10` | Max concurrent containers |
+| `CONTAINER_LIFETIME` | `3600` | Auto-cleanup timeout (seconds) |
+| `CONTAINER_IMAGE` | `ghcr.io/jonasbg/linux-webterminal/terminal-base:latest` | Fallback image when no course is specified |
+| `PORT` | `8080` | Server listen port |
+
+## Useful Commands
+
+Remove all terminal containers:
+
+```bash
+docker rm -f $(docker ps -a --filter "label=app=web-terminal" -q)
+```
+
+List unique IP addresses from logs:
 
 ```bash
 grep -hoP 'Origin IP: \K[\d\.]+' logs/*.log | sort -u
 ```
-
-### Environments
-
-Here's a Markdown table containing the extracted environment variables, their default values, and descriptions:
-
-| Environment Variable     | Default Value | Description |
-|--------------------------|--------------|-------------|
-| `HOST`                   | `*`          | Defines the CORS allowed origins. |
-| `TTY_LOGGING_ENABLED`    | `false`      | Enables or disables logging for terminal sessions. |
-| `TTY_LOG_DIR`            | `./logs`     | Directory where session logs are stored. |
-| `MAX_CONTAINERS`         | `10`         | Maximum number of terminal containers allowed. |
-| `CONTAINER_LIFETIME`     | `3600`       | Lifetime (in seconds) before a container is automatically cleaned up. |
-| `CONTAINER_IMAGE`        | `ghcr.io/jonasbg/linux-webterminal/terminal-base:latest` | Docker image used for terminal sessions. |
-
-## Development
-
-More details about development and setup will be added here.
-
-```bash
-ls Dockerfile.base | entr -s 'docker build -t terminal-base . --file Dockerfile.base'
-```
-
-## License
-
-[Add your license information here]

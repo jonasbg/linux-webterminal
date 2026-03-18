@@ -15,7 +15,32 @@ import os
 import docker
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
+
+
+# Course definitions: maps slug -> container configuration
+# SecurityProfile "strict" = locked down (no network, read-only, caps dropped)
+# SecurityProfile "relaxed" = permissive (network, writable, privileged, for podman-in-podman)
+COURSES = {
+    'linux-1': {
+        'title': 'Linux I',
+        'description': 'Introduction to Linux command line - file navigation, basic commands, and the clmystery challenge.',
+        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-linux-1:latest',
+        'profile': 'strict',
+    },
+    'linux-2': {
+        'title': 'Linux II',
+        'description': 'Advanced Linux - process investigation, /proc filesystem, and git signing.',
+        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest',
+        'profile': 'strict',
+    },
+    'docker': {
+        'title': 'Docker Workshop',
+        'description': 'Build small, secure and immutable containers. Multi-stage builds, Trivy scanning, and Hadolint.',
+        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-docker:latest',
+        'profile': 'relaxed',
+    },
+}
 
 
 # Create Flask app and wrap with app context
@@ -311,10 +336,82 @@ class TTYController:
         except Exception as e:
             logger.error("Error listing containers for cleanup: %s", e)
 
-    def create_session(self, ws_id, user_id, request=None):
+    def _get_container_kwargs(self, profile, ws_id, user_id, image):
+        """Build container run kwargs based on security profile."""
+        base_kwargs = {
+            'detach': True,
+            'tty': True,
+            'stdin_open': True,
+            'remove': True,
+            'labels': {
+                'app': 'web-terminal',
+                'ws_id': ws_id,
+                'user_id': user_id,
+                'io.containers.autoupdate': 'image',
+            },
+            'environment': {
+                "TERM": "xterm",
+                "PS1": "\\w \\$ ",
+                "HOME": "/home/termuser",
+                "PATH": "/usr/local/bin",
+            },
+        }
+
+        if profile == 'relaxed':
+            # Permissive config for podman-in-podman / Docker workshop
+            base_kwargs.update({
+                'user': '0:0',
+                'userns_mode': 'host',
+                'network': 'bridge',
+                'privileged': True,
+                'read_only': False,
+                'tmpfs': {
+                    "/run": "rw,nosuid,nodev,exec,mode=755",
+                    "/var/lib/containers": "rw,nosuid,nodev,exec,mode=755",
+                    "/tmp": "size=256m,rw,nosuid,nodev",
+                },
+            })
+        else:
+            # Strict config for Linux I/II and default
+            base_kwargs.update({
+                'user': '1000:1000',
+                'network': 'none',
+                'cap_drop': ['ALL'],
+                'security_opt': [
+                    'no-new-privileges:true',
+                    "mask=/proc/cpuinfo", "mask=/proc/meminfo",
+                    "mask=/proc/diskstats", "mask=/proc/modules",
+                    "mask=/proc/kallsyms", "mask=/proc/keys",
+                    "mask=/proc/drivers", "mask=/proc/net",
+                    "mask=/proc/asound", "mask=/proc/key-users",
+                    "mask=/proc/slabinfo", "mask=/proc/uptime",
+                    "mask=/proc/stat", "mask=/proc/zoneinfo",
+                    "mask=/proc/vmallocinfo", "mask=/proc/mounts",
+                    "mask=/proc/kpageflags", "mask=/proc/kpagecount",
+                    "mask=/proc/kpagecgroup", "mask=/proc/scsi",
+                    "mask=/proc/buddyinfo", "mask=/proc/pagetypeinfo",
+                    "mask=/proc/ioports", "mask=/proc/iomem",
+                    "mask=/proc/interrupts", "mask=/proc/softirqs",
+                    "mask=/proc/dma",
+                ],
+                'cpu_period': 100000,
+                'cpu_quota': 10000,
+                'cpu_shares': 128,
+                'pids_limit': 10,
+                'mem_limit': '64m',
+                'read_only': True,
+                'tmpfs': {
+                    '/tmp': 'size=64m,noexec,nosuid',
+                    '/home': 'size=64m,exec',
+                },
+            })
+
+        return base_kwargs
+
+    def create_session(self, ws_id, user_id, request=None, course=None):
         with self.lock:
             logger.info(
-                "Creating new session for user %s (ws_id: %s)", user_id, ws_id)
+                "Creating new session for user %s (ws_id: %s, course: %s)", user_id, ws_id, course)
 
             # Check if we've hit the container limit
             if len(self.sessions) >= self.max_containers:
@@ -329,84 +426,16 @@ class TTYController:
                 self.cleanup_session(old_ws_id)
 
             try:
-                image = os.environ.get(
+                # Resolve image and security profile from course config
+                course_config = COURSES.get(course, {}) if course else {}
+                profile = course_config.get('profile', 'strict')
+                image = course_config.get('image') or os.environ.get(
                     'CONTAINER_IMAGE', 'ghcr.io/jonasbg/linux-webterminal/terminal-base:latest')
-                logger.info("Starting container with image: %s", image)
-                container = self.client.containers.run(
-                    image,
-                    detach=True,
-                    tty=True,
-                    stdin_open=True,
-                    remove=True,
-                    user='0:0',
-                    userns_mode='host',
-                    labels={
-                        'app': 'web-terminal',
-                        'ws_id': ws_id,
-                        'user_id': user_id,
-                        'io.containers.autoupdate': 'image'
-                    },
-                    # cap_drop=['ALL'],
-                    # cap_add=["CAP_SETUID", "CAP_SETGID",
-                    #          "CAP_NET_BIND_SERVICE"],
-                    network="bridge",  # none, slirp4netns, bridge
-                    privileged=True,
-                    # security_opt=[
-                    #     'no-new-privileges:true',
-                    #     "mask=/proc/cpuinfo",
-                    #     "mask=/proc/meminfo",
-                    #     "mask=/proc/diskstats",
-                    #     "mask=/proc/modules",
-                    #     "mask=/proc/kallsyms",
-                    #     "mask=/proc/keys",
-                    #     "mask=/proc/drivers",
-                    #     "mask=/proc/net",
-                    #     "mask=/proc/asound",
-                    #     "mask=/proc/key-users",
-                    #     "mask=/proc/slabinfo",
-                    #     "mask=/proc/uptime",
-                    #     "mask=/proc/stat",
-                    #     "mask=/proc/zoneinfo",
-                    #     "mask=/proc/vmallocinfo",
-                    #     "mask=/proc/mounts",
-                    #     "mask=/proc/kpageflags",
-                    #     "mask=/proc/kpagecount",
-                    #     "mask=/proc/kpagecgroup",
-                    #     "mask=/proc/scsi",
-                    #     "mask=/proc/buddyinfo",
-                    #     "mask=/proc/pagetypeinfo",
-                    #     "mask=/proc/ioports",
-                    #     "mask=/proc/iomem",
-                    #     "mask=/proc/interrupts",
-                    #     "mask=/proc/softirqs",
-                    #     "mask=/proc/dma",
-                    #     "mask=/proc/uptime"
-                    # ],
-                    # cpu_period=100000,  # Default CPU CFS period (microseconds)
-                    # cpu_quota=10000,    # Only allow 10% CPU usage
-                    # cpu_shares=128,     # Lower CPU priority relative to other containers
-                    # ulimits=[
-                    #     # Restrict CPU time to 10 seconds
-                    #     {'name': 'cpu', 'soft': 10, 'hard': 10},
-                    #     # Limit number of processes even more
-                    #     {'name': 'nproc', 'soft': 20, 'hard': 20}
-                    # ],
-                    # pids_limit=10,
-                    # mem_limit='64m',
-                    read_only=False,
-                    tmpfs={
-                        # '/home':              'size=2560m,exec',
-                        "/run":               "rw,nosuid,nodev,exec,mode=755",
-                        "/var/lib/containers": "rw,nosuid,nodev,exec,mode=755",
-                        "/tmp":                "size=256m,rw,nosuid,nodev",
-                    },
-                    environment={
-                        "TERM": "xterm",
-                        "PS1": "\\w \\$ ",
-                        "HOME": "/home/termuser",
-                        "PATH": "/usr/local/bin",
-                    }
-                )
+
+                logger.info("Starting container with image: %s (profile: %s)", image, profile)
+
+                kwargs = self._get_container_kwargs(profile, ws_id, user_id, image)
+                container = self.client.containers.run(image, **kwargs)
 
                 # First set the terminal size
                 stty_exec = self.client.api.exec_create(
@@ -1066,7 +1095,25 @@ def cleanup_all_containers(signum, frame):
 
 @app.route('/')
 def index():
+    return render_template('index.html')
+
+
+@app.route('/terminal')
+def terminal():
     return render_template('terminal.html')
+
+
+@app.route('/api/courses')
+def api_courses():
+    courses_list = []
+    for slug, config in COURSES.items():
+        courses_list.append({
+            'slug': slug,
+            'title': config['title'],
+            'description': config['description'],
+            'profile': config['profile'],
+        })
+    return jsonify(courses_list)
 
 
 @socketio.on('connect')
@@ -1083,9 +1130,9 @@ def handle_connect():
 def handle_start_session(data):
     ws_id = data['id']
     user_id = request.sid
+    course = data.get('course')  # Optional course slug from client
     try:
-        # Use the original create_session to maintain compatibility
-        container_id = tty_controller.create_session(ws_id, user_id, request)
+        container_id = tty_controller.create_session(ws_id, user_id, request, course=course)
         logger.info(
             "Created container %s for session %s (user: %s)", container_id, ws_id, user_id)
 

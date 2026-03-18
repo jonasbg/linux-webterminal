@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Terminal - Choose Your Task</title>
+    <link rel="icon" type="image/x-icon" href="/static/img/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-touch-icon.png">
+    <meta property="og:title" content="Web Terminal" />
+    <meta property="og:description" content="Interactive web-based terminal environments for learning" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/static/img/og_image.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --bg-color: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --card-hover: #222;
+            --text-color: #e0e0e0;
+            --text-muted: #888;
+            --primary: #4a9eff;
+            --primary-hover: #357abd;
+            --green: #22c55e;
+            --orange: #f59e0b;
+            --border: #333;
+            --font-ui: 'Inter', system-ui, sans-serif;
+            --font-mono: 'Ubuntu Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-ui);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            width: 100%;
+            padding: 2rem 2rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header h1 i { color: var(--primary); margin-right: 0.5rem; }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .courses {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        .course-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .course-card:hover {
+            background: var(--card-hover);
+            border-color: var(--primary);
+        }
+
+        .course-card .icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .course-card h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .course-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            flex: 1;
+            margin-bottom: 1rem;
+        }
+
+        .course-card .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-strict {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--green);
+        }
+
+        .badge-relaxed {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--orange);
+        }
+
+        .start-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .start-btn:hover { background: var(--primary-hover); }
+
+        .footer {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            .courses { grid-template-columns: 1fr; padding: 1rem; }
+            .header { padding: 1.5rem 1rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fa-solid fa-terminal"></i> Web Terminal</h1>
+        <p>Choose a task to get started. Each task spins up its own sandboxed environment.</p>
+    </div>
+
+    <div class="courses" id="courses">
+        <!-- Populated by JS -->
+    </div>
+
+    <div class="footer">
+        Sessions reset when you leave. Everything is logged.
+    </div>
+
+    <script>
+        const ICONS = {
+            'linux-1': 'fa-brands fa-linux',
+            'linux-2': 'fa-brands fa-linux',
+            'docker': 'fa-brands fa-docker',
+        };
+
+        fetch('/api/courses')
+            .then(r => r.json())
+            .then(courses => {
+                const container = document.getElementById('courses');
+                courses.forEach(c => {
+                    const icon = ICONS[c.slug] || 'fa-solid fa-terminal';
+                    const badgeClass = c.profile === 'strict' ? 'badge-strict' : 'badge-relaxed';
+                    const badgeLabel = c.profile === 'strict' ? 'Sandboxed' : 'Full Access';
+
+                    const card = document.createElement('div');
+                    card.className = 'course-card';
+                    card.innerHTML = `
+                        <div class="icon"><i class="${icon}"></i></div>
+                        <span class="badge ${badgeClass}">${badgeLabel}</span>
+                        <h2>${c.title}</h2>
+                        <p>${c.description}</p>
+                        <a href="/terminal?course=${c.slug}" class="start-btn">
+                            <i class="fa-solid fa-play"></i> Start
+                        </a>
+                    `;
+                    container.appendChild(card);
+                });
+            });
+    </script>
+</body>
+</html>
