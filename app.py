@@ -52,6 +52,14 @@ COURSES = {
         'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-docker:latest',
         'profile': 'relaxed',
     },
+    'kubernetes': {
+        'title': 'Kubernetes Basics',
+        'description': 'Navigate a cluster with the real kubectl binary against a mock API server.',
+        'image': 'ghcr.io/jonasbg/linux-webterminal/terminal-kubernetes:latest',
+        'profile': 'strict',
+        'pids_limit': 64,
+        'mem_limit': '128m',
+    },
 }
 
 
@@ -348,7 +356,7 @@ class TTYController:
         except Exception as e:
             logger.error("Error listing containers for cleanup: %s", e)
 
-    def _get_container_kwargs(self, profile, ws_id, user_id, image):
+    def _get_container_kwargs(self, profile, ws_id, user_id, image, overrides=None):
         """Build container run kwargs based on security profile."""
         base_kwargs = {
             'detach': True,
@@ -418,6 +426,10 @@ class TTYController:
                 },
             })
 
+        # Apply per-course overrides
+        if overrides:
+            base_kwargs.update(overrides)
+
         return base_kwargs
 
     def create_session(self, ws_id, user_id, request=None, course=None):
@@ -444,9 +456,16 @@ class TTYController:
                 image = course_config.get('image') or os.environ.get(
                     'CONTAINER_IMAGE', 'ghcr.io/jonasbg/linux-webterminal/terminal-base:latest')
 
+                # Build per-course overrides for resource limits
+                overrides = {}
+                if course_config.get('pids_limit'):
+                    overrides['pids_limit'] = course_config['pids_limit']
+                if course_config.get('mem_limit'):
+                    overrides['mem_limit'] = course_config['mem_limit']
+
                 logger.info("Starting container with image: %s (profile: %s)", image, profile)
 
-                kwargs = self._get_container_kwargs(profile, ws_id, user_id, image)
+                kwargs = self._get_container_kwargs(profile, ws_id, user_id, image, overrides)
                 container = self.client.containers.run(image, **kwargs)
 
                 # First set the terminal size

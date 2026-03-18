@@ -19,6 +19,11 @@ services:
       context: ./containers
     image: ghcr.io/jonasbg/linux-webterminal/terminal-containers:latest
 
+  kubernetes:
+    build:
+      context: ./kubernetes
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-kubernetes:latest
+
   docker:
     build:
       context: ./docker
