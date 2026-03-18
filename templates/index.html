@@ -378,7 +378,8 @@
             document.getElementById('dialog-meta').innerHTML =
                 `<p><i class="fa-solid fa-shield-halved"></i> ${badgeLabel}</p>` +
                 `<p><i class="fa-solid fa-clock"></i> Resets on exit</p>`;
-            document.getElementById('dialog-start').href = `/terminal?course=${course.slug}`;
+            const guideParam = course.has_guide ? '&guide=1' : '';
+            document.getElementById('dialog-start').href = `/terminal?course=${course.slug}${guideParam}`;
             document.getElementById('dialog-overlay').classList.add('open');
 
             const contentEl = document.getElementById('dialog-content');
@@ -455,7 +456,7 @@
                             <button class="btn btn-ghost" onclick="event.stopPropagation(); openDialog(courses.find(x => x.slug === '${c.slug}'))" title="More info">
                                 <i class="fa-solid fa-circle-info"></i>
                             </button>
-                            <a href="/terminal?course=${c.slug}" class="btn btn-primary" onclick="event.stopPropagation()">
+                            <a href="/terminal?course=${c.slug}${c.has_guide ? '&guide=1' : ''}" class="btn btn-primary" onclick="event.stopPropagation()">
                                 <i class="fa-solid fa-play"></i> Start
                             </a>
                         </div>

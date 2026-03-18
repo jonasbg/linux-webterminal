@@ -35,6 +35,7 @@ COURSES = {
         'long_description': 'Work with a real git repository to understand commit signing. Learn how GPG and SSH keys are used to verify code authenticity, inspect signed commits, and configure your own signing setup.',
         'image': 'git.torden.tech/jonasbg/terminal-linux-2:latest',
         'profile': 'strict',
+        'guides': ['warmup.md'],
     },
     'linux-3': {
         'title': 'Linux III',
@@ -42,6 +43,7 @@ COURSES = {
         'long_description': 'Dive into the /proc virtual filesystem to understand how Linux manages processes. Inspect PIDs, environment variables, file descriptors, memory maps, and learn how PID namespaces provide container isolation.',
         'image': 'git.torden.tech/jonasbg/terminal-linux-3:latest',
         'profile': 'strict',
+        'guides': ['instructions-task02.md'],
     },
     'containers': {
         'title': 'Container Fundamentals',
@@ -49,6 +51,7 @@ COURSES = {
         'long_description': 'Understand what a container really is - just a Linux process with namespaces and cgroups. Experience resource limits firsthand by hitting PID limits, memory caps, and CPU throttling. Learn the runtime stack from runc to containerd to Podman.',
         'image': 'git.torden.tech/jonasbg/terminal-containers:latest',
         'profile': 'strict',
+        'guides': ['instruction.md'],
     },
     'docker': {
         'title': 'Docker Workshop',
@@ -56,6 +59,7 @@ COURSES = {
         'long_description': 'Hands-on workshop covering container best practices. Build multi-stage Dockerfiles, compare image sizes across Alpine/Ubuntu/Scratch, scan for vulnerabilities with Trivy, lint with Hadolint, and learn security hardening techniques.',
         'image': 'git.torden.tech/jonasbg/terminal-docker:latest',
         'profile': 'relaxed',
+        'guides': ['instructions.md'],
     },
     'kubernetes': {
         'title': 'Kubernetes Basics',
@@ -65,6 +69,7 @@ COURSES = {
         'profile': 'strict',
         'pids_limit': 64,
         'mem_limit': '128m',
+        'guides': ['instruction.md'],
     },
 }
 
@@ -1148,12 +1153,13 @@ def terminal():
 def api_courses():
     courses_list = []
     for slug, config in COURSES.items():
-        courses_list.append({
+            courses_list.append({
             'slug': slug,
             'title': config['title'],
             'description': config['description'],
             'long_description': config.get('long_description', config['description']),
             'profile': config['profile'],
+            'has_guide': bool(config.get('guides')),
         })
     return jsonify(courses_list)
 
@@ -1183,6 +1189,24 @@ def api_course_readme(slug):
                         val = [v.strip() for v in val[1:-1].split(',')]
                     meta[key.strip()] = val
     return jsonify({'meta': meta, 'body': body})
+
+
+@app.route('/api/courses/<slug>/files')
+def api_course_files(slug):
+    if slug not in COURSES:
+        return jsonify([]), 404
+    config = COURSES[slug]
+    guide_names = config.get('guides', [])
+    if not guide_names:
+        return jsonify([])
+    course_dir = os.path.join('courses', slug)
+    files = []
+    for name in guide_names:
+        filepath = os.path.join(course_dir, name)
+        if os.path.isfile(filepath):
+            with open(filepath, 'r') as f:
+                files.append({'name': name, 'content': f.read()})
+    return jsonify(files)
 
 
 @socketio.on('connect')
