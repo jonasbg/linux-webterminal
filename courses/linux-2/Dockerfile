@@ -25,8 +25,8 @@ RUN for cmd in sh sed base64 date ps readlink tr stty cat terminfo cd chmod cp e
     done
 
 # Set up lab environment: git signing repo directly in home
-RUN git clone https://github.com/jonasbg/linux-git-signing-repo /home/termuser/git-signing && \
-    chown -R termuser:termuser /home/termuser/git-signing
+RUN git clone https://github.com/jonasbg/linux-git-signing-repo /home/termuser && \
+    chown -R termuser:termuser /home/termuser
 
 # Configure shell environment
 COPY --chown=root:root <<-'EOF' /home/termuser/.profile
