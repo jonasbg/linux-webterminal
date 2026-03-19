@@ -1,14 +1,14 @@
 # Build the alpine stage
-docker build --target alpine -t my-alpine-image .
+`docker build --target alpine -t my-alpine-image .`
 
 # Build the ubuntu stage
-docker build --target ubuntu -t my-ubuntu-image .
+`docker build --target ubuntu -t my-ubuntu-image .`
 
 # Build the go-builder stage
-docker build --target go-builder -t my-go-builder-image .
+`docker build --target go-builder -t my-go-builder-image .`
 
 # Build the final scratch stage
-docker build --target scratch -t my-scratch-image .
+`docker build --target scratch -t my-scratch-image .`
 
 
 # Running hadolint
