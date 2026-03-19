@@ -2,8 +2,6 @@ FROM alpine:latest
 
 # System dependencies (minimal set)
 RUN apk add --no-cache \
-    git \
-    openssh \
     ncurses \
     ncurses-terminfo \
     ncurses-terminfo-base
@@ -15,8 +13,8 @@ RUN addgroup -g 1000 termuser && \
 # Create our restricted environment structure
 RUN mkdir -p /usr/local/bin
 
-# Copy allowed executables and secure system binary locations
-RUN for cmd in sh sed base64 date ps readlink tr stty cat terminfo cd chmod cp echo grep git ssh-keygen head id less ls md5sum cut sed sleep mkdir mv pwd rm tail touch vi vim tput clear wc which whoami hostname kill; do \
+# ps, sleep, kill, hostname needed for namespace/cgroup exercises
+RUN for cmd in sh sed stty cat cd cp echo grep head id less ls cut sleep pwd rm tail readlink ps kill hostname tput clear wc which; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \
@@ -74,10 +72,6 @@ EOF
 # Make profile file read-only
 RUN chmod 444 /home/termuser/.profile
 
-# Secure system binaries (after all setup is complete)
-RUN chown -R root:root /bin /usr/bin /sbin /usr/sbin && \
-    chmod -R 644 /bin/* /usr/bin/* /sbin/* /usr/sbin/* && \
-    chmod 555 /bin /usr/bin /sbin /usr/sbin
 
 # Switch to termuser
 USER termuser

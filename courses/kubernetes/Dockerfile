@@ -29,8 +29,8 @@ RUN addgroup -g 1000 termuser && \
 # Create restricted environment structure
 RUN mkdir -p /usr/local/bin
 
-# Copy allowed executables
-RUN for cmd in sh sed base64 date ps readlink tr stty cat terminfo cd chmod cp echo grep head id less ls md5sum cut sleep mkdir mv pwd rm tail touch vi vim tput clear wc which whoami; do \
+# vi for kubectl edit, base64 for decoding secrets
+RUN for cmd in sh sed stty cat cd cp echo grep head less ls base64 cut sleep pwd mkdir rm tail vi tput clear wc which; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \
@@ -83,10 +83,6 @@ EOF
 
 RUN chmod 444 /home/termuser/.profile
 
-# Secure system binaries
-RUN chown -R root:root /bin /usr/bin /sbin /usr/sbin && \
-    chmod -R 644 /bin/* /usr/bin/* /sbin/* /usr/sbin/* && \
-    chmod 555 /bin /usr/bin /sbin /usr/sbin
 
 USER termuser
 WORKDIR /home/termuser

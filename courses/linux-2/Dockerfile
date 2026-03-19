@@ -16,7 +16,8 @@ RUN addgroup -g 1000 termuser && \
 RUN mkdir -p /usr/local/bin
 
 # Copy allowed executables and secure system binary locations
-RUN for cmd in sh sed base64 date ps readlink tr stty cat terminfo cd chmod cp echo grep git ssh-keygen head id less ls md5sum cut sed sleep mkdir mv pwd rm tail touch vi vim tput clear wc which whoami; do \
+# git, ssh-keygen needed for signing exercises; base64 for decoding secrets
+RUN for cmd in sh sed stty cat cd cp echo grep git ssh-keygen head id less ls base64 cut sleep mkdir mv pwd rm tail touch vi tput clear wc which; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \
@@ -80,10 +81,6 @@ EOF
 # Make profile file read-only
 RUN chmod 444 /home/termuser/.profile
 
-# Secure system binaries (after all setup is complete)
-RUN chown -R root:root /bin /usr/bin /sbin /usr/sbin && \
-    chmod -R 644 /bin/* /usr/bin/* /sbin/* /usr/sbin/* && \
-    chmod 555 /bin /usr/bin /sbin /usr/sbin
 
 # Switch to termuser
 USER termuser
