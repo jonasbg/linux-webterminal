@@ -67,7 +67,6 @@ alias ll='/usr/local/bin/ls -la'
 alias l='/usr/local/bin/ls -l'
 alias ..='cd ..'
 alias cls='/usr/local/bin/clear'
-alias docker="/usr/local/bin/podman"
 
 EOF
 
