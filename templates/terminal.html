@@ -613,7 +613,8 @@
             const content = guideFiles[name];
             if (!content) return;
             const el = document.getElementById('guide-content');
-            el.innerHTML = marked.parse(content);
+            const isMarkdown = name.endsWith('.md') || name.endsWith('.markdown');
+            el.innerHTML = marked.parse(isMarkdown ? content : '```\n' + content + '\n```');
 
             // Add copy buttons to code blocks
             el.querySelectorAll('pre').forEach(pre => {

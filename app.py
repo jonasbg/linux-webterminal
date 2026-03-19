@@ -28,6 +28,7 @@ COURSES = {
         'long_description': 'Solve a command-line murder mystery using grep, cat, head, and other basic Linux commands. Learn to navigate the filesystem, search through files, and piece together clues - all from the terminal.',
         'image': 'git.torden.tech/jonasbg/terminal-linux-1:latest',
         'profile': 'strict',
+        'guides': ['/home/termuser/instructions', '/home/termuser/cheatsheet.md'],
     },
     'linux-2': {
         'title': 'Linux II',
