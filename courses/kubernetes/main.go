@@ -1,11 +1,22 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"log"
+	"math/big"
+	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -79,10 +90,139 @@ func (s *Store) Delete(resource, ns, name string) bool {
 
 func main() {
 	initData()
+
+	// Generate PKI: CA, server cert, client cert
+	caCert, caKey := generateCA()
+	serverCert, serverKey := generateCert(caCert, caKey, true)
+	clientCert, clientKey := generateCert(caCert, caKey, false)
+
+	// Write certs to disk so users can inspect them
+	pkiDir := "/tmp/pki"
+	os.MkdirAll(pkiDir, 0755)
+	writePEM(pkiDir+"/ca.crt", "CERTIFICATE", caCert)
+	writePEM(pkiDir+"/server.crt", "CERTIFICATE", serverCert)
+	writePEM(pkiDir+"/server.key", "EC PRIVATE KEY", marshalECKey(serverKey))
+	writePEM(pkiDir+"/client.crt", "CERTIFICATE", clientCert)
+	writePEM(pkiDir+"/client.key", "EC PRIVATE KEY", marshalECKey(clientKey))
+
+	// Generate kubeconfig with embedded cert data
+	writeKubeconfig(caCert, clientCert, marshalECKey(clientKey))
+
+	// Configure TLS server
+	tlsCert, _ := tls.X509KeyPair(
+		pemEncode("CERTIFICATE", serverCert),
+		pemEncode("EC PRIVATE KEY", marshalECKey(serverKey)),
+	)
+	caPool := x509.NewCertPool()
+	caPool.AppendCertsFromPEM(pemEncode("CERTIFICATE", caCert))
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", router)
-	log.Println("Mock Kubernetes API server listening on 127.0.0.1:8080")
-	log.Fatal(http.ListenAndServe("127.0.0.1:8080", mux))
+
+	server := &http.Server{
+		Addr:    "127.0.0.1:6443",
+		Handler: mux,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{tlsCert},
+			ClientCAs:    caPool,
+			ClientAuth:   tls.VerifyClientCertIfGiven,
+		},
+	}
+
+	log.Println("Mock Kubernetes API server listening on https://127.0.0.1:6443")
+	log.Fatal(server.ListenAndServeTLS("", ""))
+}
+
+func generateCA() (certDER []byte, key *ecdsa.PrivateKey) {
+	key, _ = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	tmpl := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{Organization: []string{"mock-kubernetes"}, CommonName: "mock-kubernetes-ca"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+	certDER, _ = x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	return
+}
+
+func generateCert(caDER []byte, caKey *ecdsa.PrivateKey, isServer bool) (certDER []byte, key *ecdsa.PrivateKey) {
+	ca, _ := x509.ParseCertificate(caDER)
+	key, _ = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(time.Now().UnixNano()),
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
+	}
+	if isServer {
+		tmpl.Subject = pkix.Name{Organization: []string{"mock-kubernetes"}, CommonName: "kube-apiserver"}
+		tmpl.DNSNames = []string{"localhost", "kubernetes", "kubernetes.default", "kubernetes.default.svc"}
+		tmpl.IPAddresses = []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("10.96.0.1")}
+		tmpl.KeyUsage = x509.KeyUsageDigitalSignature
+		tmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+	} else {
+		tmpl.Subject = pkix.Name{Organization: []string{"system:masters"}, CommonName: "student"}
+		tmpl.KeyUsage = x509.KeyUsageDigitalSignature
+		tmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
+	}
+	certDER, _ = x509.CreateCertificate(rand.Reader, tmpl, ca, &key.PublicKey, caKey)
+	return
+}
+
+func marshalECKey(key *ecdsa.PrivateKey) []byte {
+	b, _ := x509.MarshalECPrivateKey(key)
+	return b
+}
+
+func pemEncode(typ string, der []byte) []byte {
+	return pem.EncodeToMemory(&pem.Block{Type: typ, Bytes: der})
+}
+
+func writePEM(path, typ string, der []byte) {
+	f, _ := os.Create(path)
+	defer f.Close()
+	pem.Encode(f, &pem.Block{Type: typ, Bytes: der})
+}
+
+func writeKubeconfig(caDER, clientCertDER, clientKeyDER []byte) {
+	// Base64-encode the PEM data (kubectl expects base64 of PEM)
+	caPEM := pemEncode("CERTIFICATE", caDER)
+	clientCertPEM := pemEncode("CERTIFICATE", clientCertDER)
+	clientKeyPEM := pemEncode("EC PRIVATE KEY", clientKeyDER)
+
+	kubeconfig := fmt.Sprintf(`apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    certificate-authority-data: %s
+    server: https://127.0.0.1:6443
+  name: mock-cluster
+contexts:
+- context:
+    cluster: mock-cluster
+    namespace: default
+    user: student
+  name: mock
+current-context: mock
+users:
+- name: student
+  user:
+    client-certificate-data: %s
+    client-key-data: %s
+`,
+		base64Encode(caPEM),
+		base64Encode(clientCertPEM),
+		base64Encode(clientKeyPEM),
+	)
+
+	os.MkdirAll("/home/termuser/.kube", 0755)
+	os.WriteFile("/home/termuser/.kube/config", []byte(kubeconfig), 0600)
+}
+
+func base64Encode(data []byte) string {
+	return base64.StdEncoding.EncodeToString(data)
 }
 
 func router(w http.ResponseWriter, r *http.Request) {

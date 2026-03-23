@@ -266,6 +266,76 @@ Every kubectl command is just an HTTP request:
 
 kubectl is just a fancy HTTP client. The API server is just a REST API with a database.
 
+### 5.1 Look at your kubeconfig
+
+Your kubeconfig file tells kubectl where the API server is and how to authenticate:
+
+```
+cat ~/.kube/config
+```
+
+Notice the key fields:
+- **server**: `https://127.0.0.1:6443` — the API server address (HTTPS, port 6443)
+- **certificate-authority-data**: the CA certificate that kubectl uses to verify the server
+- **client-certificate-data**: your client certificate (proves who you are)
+- **client-key-data**: your private key (signs your requests)
+
+This is mutual TLS (mTLS) — both sides verify each other. The server proves it's the real API server, and you prove you're an authorized user.
+
+You can decode and inspect these certificates:
+
+```
+kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}' | base64 -d
+```
+
+The CA cert files are also available at `/tmp/pki/`:
+
+```
+ls /tmp/pki/
+```
+
+### 5.2 See the actual HTTP requests with -v=8
+
+kubectl has verbosity levels from 1-10. Level 8 shows the actual HTTP requests and responses — the curl commands that kubectl sends:
+
+```
+kubectl get pods -v=8
+```
+
+This outputs lines like:
+
+```
+I0323 12:00:00.000000  GET https://127.0.0.1:6443/api/v1/namespaces/default/pods 200 OK in 5 milliseconds
+```
+
+Try it with different commands to see the API calls:
+
+```
+kubectl get nodes -v=8
+kubectl get services -n production -v=8
+kubectl get pod nginx-7d4f8b7b94-abc12 -o yaml -v=8
+```
+
+At verbosity level 8 you'll see:
+- The full URL (which API path kubectl calls)
+- Request and response headers
+- The HTTP method (GET, POST, PUT, DELETE)
+- Response status codes (200, 404, etc.)
+
+**Key insight:** There is nothing magic about kubectl. You could do the same thing with curl:
+
+```
+curl --cacert /tmp/pki/ca.crt --cert /tmp/pki/client.crt --key /tmp/pki/client.key https://127.0.0.1:6443/api/v1/namespaces/default/pods
+```
+
+That curl command does exactly what `kubectl get pods -o json` does — it sends a GET request to the API server with TLS client authentication.
+
+Try other API endpoints directly:
+
+```
+curl -s --cacert /tmp/pki/ca.crt --cert /tmp/pki/client.crt --key /tmp/pki/client.key https://127.0.0.1:6443/api/v1/nodes | head -20
+```
+
 ---
 
 ## Challenges
