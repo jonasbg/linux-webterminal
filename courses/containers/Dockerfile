@@ -14,7 +14,7 @@ RUN addgroup -g 1000 termuser && \
 RUN mkdir -p /usr/local/bin
 
 # ps, sleep, kill, hostname needed for namespace/cgroup exercises
-RUN for cmd in sh sed stty cat cd cp echo grep head id less ls cut sleep pwd rm tail readlink ps kill hostname tput clear wc which; do \
+RUN for cmd in sh sed stty cat cd cp echo grep head id less ls cut sleep pwd rm tail readlink ps kill hostname tput clear wc which printenv env; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \

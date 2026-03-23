@@ -25,7 +25,7 @@ RUN mkdir -p /usr/local/bin /home/termuser/.local/share/containers/storage && \
     chmod -R 755 /home/termuser/.local
 
 # Copy allowed executables and secure system binary locations
-RUN for cmd in sh conmon crun newuidmap newgidmap sed base64 date ps readlink tr stty cat terminfo cd chmod cp echo grep git ssh-keygen head id less ls md5sum cut sed sleep mkdir mv pwd rm tail touch vi vim tput clear wc which whoami podman curl tar; do \
+RUN for cmd in sh conmon crun newuidmap newgidmap sed base64 date ps readlink tr stty cat terminfo cd chmod cp echo grep git ssh-keygen head id less ls md5sum cut sed sleep mkdir mv pwd rm tail touch vi vim tput clear wc which whoami podman curl tar printenv env; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \

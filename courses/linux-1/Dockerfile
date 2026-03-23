@@ -15,7 +15,7 @@ RUN addgroup -g 1000 termuser && \
 RUN mkdir -p /usr/local/bin
 
 # Copy allowed executables and secure system binary locations
-RUN for cmd in sh sed stty cat cd cp echo grep head less ls cut tail pwd tput clear wc which nano; do \
+RUN for cmd in sh sed stty cat cd cp echo grep head less ls cut tail pwd tput clear wc which nano printenv env; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \

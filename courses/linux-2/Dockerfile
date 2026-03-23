@@ -17,7 +17,7 @@ RUN mkdir -p /usr/local/bin
 
 # Copy allowed executables and secure system binary locations
 # git, ssh-keygen needed for signing exercises; base64 for decoding secrets
-RUN for cmd in sh sed stty cat cd cp echo grep git ssh-keygen head id less ls base64 cut sleep mkdir mv pwd rm tail touch vi tput clear wc which; do \
+RUN for cmd in sh sed stty cat cd cp echo grep git ssh-keygen head id less ls base64 cut sleep mkdir mv pwd rm tail touch vi tput clear wc which printenv env; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \

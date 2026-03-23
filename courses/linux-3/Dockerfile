@@ -15,7 +15,7 @@ RUN mkdir -p /usr/local/bin
 
 # Copy allowed executables and secure system binary locations
 # ps, sleep, kill, readlink needed for process investigation; tr for /proc parsing
-RUN for cmd in sh sed stty cat cd cp echo grep head id less ls cut sleep pwd rm tail tr readlink ps kill tput clear wc which; do \
+RUN for cmd in sh sed stty cat cd cp echo grep head id less ls cut sleep pwd rm tail tr readlink ps kill tput clear wc which printenv env; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \
