@@ -268,15 +268,6 @@
             color: var(--primary-color);
         }
 
-        .tab-loading {
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
 
         /* Tab bar extras */
         .tab-bar-right {
@@ -711,8 +702,6 @@
                 this.fitAddon = null;
                 this.shellId = null;
                 this.isFirstTab = isFirstTab;
-                this.isReady = false;
-                this.creating = false;
 
                 this.createTerminalElements();
                 this.initializeTerminal();
@@ -807,9 +796,6 @@
                     return;
                 }
 
-                this.setLoading(true);
-                this.creating = true;
-
                 socket.emit('create_shell', {
                     containerId: sessionId,
                     tabId: this.tabId
@@ -871,14 +857,6 @@
                 if (this.term) {
                     this.term.focus();
                     this.fitTerminal();
-                }
-            }
-
-            setLoading(isLoading) {
-                if (isLoading) {
-                    this.tabElement.classList.add('tab-loading');
-                } else {
-                    this.tabElement.classList.remove('tab-loading');
                 }
             }
 
@@ -1010,12 +988,6 @@
             const targetTab = terminals.find(t => t.tabId === data.tabId);
             if (targetTab) {
                 targetTab.shellId = data.shellId;
-                targetTab.isReady = true;
-                targetTab.setLoading(false);
-                if (targetTab.creating) {
-                    targetTab.term.clear();
-                    targetTab.creating = false;
-                }
                 targetTab.fitTerminal();
                 targetTab.term.focus();
             }
@@ -1032,7 +1004,6 @@
         socket.on('error', (data) => {
             if (activeTerminal && activeTerminal.term) {
                 activeTerminal.term.write('\r\nError: ' + data.error + '\r\n');
-                activeTerminal.setLoading(false);
             }
         });
 
