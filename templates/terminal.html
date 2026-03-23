@@ -1001,6 +1001,13 @@
             }
         });
 
+        socket.on('shell_exited', (data) => {
+            const tab = terminals.find(t => t.shellId === data.shellId);
+            if (tab) {
+                tab.close();
+            }
+        });
+
         socket.on('error', (data) => {
             if (activeTerminal && activeTerminal.term) {
                 activeTerminal.term.write('\r\nError: ' + data.error + '\r\n');

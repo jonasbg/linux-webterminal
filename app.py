@@ -1276,9 +1276,12 @@ def handle_create_shell(data):
                                 'output': output
                             }, room=user_id)
                     except Exception as e:
-                        logger.error("Error in shell read loop: %s", e)
+                        logger.error("Shell %s exited: %s", shell_id, e)
                         break
                     socketio.sleep(0.05)
+                socketio.emit('shell_exited', {
+                    'shellId': shell_id
+                }, room=user_id)
 
         socketio.start_background_task(
             read_shell_output, containerId, shell_id, user_id)
