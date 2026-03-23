@@ -505,7 +505,8 @@ class TTYController:
                     'log_file': log_file,
                     'current_command': '',
                     'buffer': '',
-                    'command_complete': False
+                    'command_complete': False,
+                    'main_shell_alive': True
                 }
                 self.user_sessions[user_id] = ws_id
 
@@ -845,6 +846,16 @@ class TTYController:
             logger.error("Error resizing shell %s: %s", shell_id, e)
             raise
 
+    def is_session_dead(self, ws_id):
+        """Check if all shells (main + additional) in a session have exited"""
+        if ws_id not in self.sessions:
+            return True
+        session = self.sessions[ws_id]
+        if session.get('main_shell_alive'):
+            return False
+        shells = session.get('shells', {})
+        return len(shells) == 0
+
     def close_shell(self, ws_id, shell_id):
         """Close a specific shell in a session"""
         with self.lock:
@@ -879,7 +890,7 @@ class TTYController:
                         shell['socket']._sock.close()
                         logger.debug("Closed socket for shell %s", shell_id)
                     except Exception as e:
-                        logger.error(
+                        logger.debug(
                             "Error closing socket for shell %s: %s", shell_id, e)
 
                 # If we have exec_id, try to forcefully terminate if possible
@@ -1233,12 +1244,16 @@ def handle_start_session(data):
                             socketio.emit(
                                 'output', {'output': output}, room=user_id)
                     except Exception as e:
-                        logger.error("Error in read loop: %s", e)
+                        logger.info("Main shell exited for session %s: %s", ws_id, e)
                         break
                     socketio.sleep(0.05)
-                # Main shell exited - notify client
-                logger.info("Main shell exited for session %s, notifying client", ws_id)
-                socketio.emit('session_ended', {}, room=user_id)
+                # Mark main shell as dead
+                if ws_id in tty_controller.sessions:
+                    tty_controller.sessions[ws_id]['main_shell_alive'] = False
+                if tty_controller.is_session_dead(ws_id):
+                    socketio.emit('session_ended', {}, room=user_id)
+                else:
+                    socketio.emit('main_shell_exited', {}, room=user_id)
 
         socketio.start_background_task(read_output, ws_id, user_id)
 
@@ -1279,9 +1294,16 @@ def handle_create_shell(data):
                         logger.info("Shell %s exited: %s", shell_id, e)
                         break
                     socketio.sleep(0.05)
+                # Remove shell from session
+                if ws_id in tty_controller.sessions:
+                    session = tty_controller.sessions[ws_id]
+                    shells = session.get('shells', {})
+                    shells.pop(shell_id, None)
                 socketio.emit('shell_exited', {
                     'shellId': shell_id
                 }, room=user_id)
+                if tty_controller.is_session_dead(ws_id):
+                    socketio.emit('session_ended', {}, room=user_id)
 
         socketio.start_background_task(
             read_shell_output, containerId, shell_id, user_id)

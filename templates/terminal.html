@@ -1014,14 +1014,17 @@
             }
         });
 
-        // When main shell exits, close tab or redirect if it's the last one
-        socket.on('session_ended', () => {
+        // Main shell exited but other tabs still alive — close the first tab
+        socket.on('main_shell_exited', () => {
             const firstTab = terminals.find(t => t.isFirstTab);
-            if (firstTab && terminals.length > 1) {
+            if (firstTab) {
                 firstTab.close();
-            } else {
-                window.location.href = '/';
             }
+        });
+
+        // All shells dead — redirect
+        socket.on('session_ended', () => {
+            window.location.href = '/';
         });
 
         socket.on('disconnect', () => {
