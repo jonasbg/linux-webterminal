@@ -1276,7 +1276,7 @@ def handle_create_shell(data):
                                 'output': output
                             }, room=user_id)
                     except Exception as e:
-                        logger.error("Shell %s exited: %s", shell_id, e)
+                        logger.info("Shell %s exited: %s", shell_id, e)
                         break
                     socketio.sleep(0.05)
                 socketio.emit('shell_exited', {

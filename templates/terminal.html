@@ -1014,9 +1014,14 @@
             }
         });
 
-        // Redirect to course selector when session ends
+        // When main shell exits, close tab or redirect if it's the last one
         socket.on('session_ended', () => {
-            window.location.href = '/';
+            const firstTab = terminals.find(t => t.isFirstTab);
+            if (firstTab && terminals.length > 1) {
+                firstTab.close();
+            } else {
+                window.location.href = '/';
+            }
         });
 
         socket.on('disconnect', () => {
