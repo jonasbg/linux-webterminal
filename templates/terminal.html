@@ -518,18 +518,21 @@
     </div>
 
     <script>
-        // Fetch and display the welcome message
-        fetch('/static/motd.html')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('motd-container').innerHTML = html;
-            });
+        // Fetch and display the welcome message (hidden if already dismissed this session)
+        if (!sessionStorage.getItem('motd-dismissed')) {
+            fetch('/static/motd.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('motd-container').innerHTML = html;
+                });
+        }
 
         // Dismiss welcome dialog
         function dismissDialog() {
             const dialog = document.getElementById('motd-dialog');
             if (dialog) {
                 dialog.classList.add('hidden');
+                sessionStorage.setItem('motd-dismissed', '1');
                 if (activeTerminal) {
                     activeTerminal.term.focus();
                 }
