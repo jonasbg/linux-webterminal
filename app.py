@@ -1346,6 +1346,9 @@ def handle_resize_shell(data):
     if not containerId or not shell_id:
         return
 
+    if containerId not in tty_controller.sessions:
+        return
+
     try:
         tty_controller.resize_shell(containerId, shell_id, cols, rows)
     except Exception as e:
@@ -1377,6 +1380,9 @@ def handle_input(data):
     if not ws_id or not user_input:
         return
 
+    if ws_id not in tty_controller.sessions:
+        return
+
     try:
         tty_controller.write_to_container(ws_id, user_input)
     except Exception as e:
@@ -1391,6 +1397,9 @@ def handle_resize(data):
     rows = data.get('rows', 24)
 
     if not ws_id:
+        return
+
+    if ws_id not in tty_controller.sessions:
         return
 
     try:

@@ -352,17 +352,17 @@ func writeTableList(w http.ResponseWriter, resource string, items []json.RawMess
 }
 
 func tableColumnsForResource(resource string) ([]interface{}, func(map[string]interface{}) []interface{}) {
-	col := func(name, typ string) interface{} {
-		return map[string]string{"name": name, "type": typ}
+	col := func(name, typ string, priority int) interface{} {
+		return map[string]interface{}{"name": name, "type": typ, "priority": priority}
 	}
 
 	switch resource {
 	case "nodes":
 		return []interface{}{
-			col("Name", "string"), col("Status", "string"), col("Roles", "string"),
-			col("Age", "string"), col("Version", "string"),
-			col("Internal-IP", "string"), col("OS-Image", "string"),
-			col("Kernel-Version", "string"), col("Container-Runtime", "string"),
+			col("Name", "string", 0), col("Status", "string", 0), col("Roles", "string", 0),
+			col("Age", "string", 0), col("Version", "string", 0),
+			col("Internal-IP", "string", 1), col("OS-Image", "string", 1),
+			col("Kernel-Version", "string", 1), col("Container-Runtime", "string", 1),
 		}, func(o map[string]interface{}) []interface{} {
 			status := nested(o, "status")
 			nodeInfo := nested(status, "nodeInfo")
@@ -407,9 +407,9 @@ func tableColumnsForResource(resource string) ([]interface{}, func(map[string]in
 
 	case "applications":
 		return []interface{}{
-			col("Name", "string"), col("Sync Status", "string"),
-			col("Health Status", "string"), col("Project", "string"),
-			col("Age", "string"),
+			col("Name", "string", 0), col("Sync Status", "string", 0),
+			col("Health Status", "string", 0), col("Project", "string", 0),
+			col("Age", "string", 0),
 		}, func(o map[string]interface{}) []interface{} {
 			meta := nested(o, "metadata")
 			spec := nested(o, "spec")
