@@ -445,14 +445,9 @@ class TTYController:
         return base_kwargs
 
     def create_session(self, ws_id, user_id, request=None, course=None):
+        # Check limits and clean up old session under lock
         with self.lock:
-            logger.info(
-                "Creating new session for user %s (ws_id: %s, course: %s)", user_id, ws_id, course)
-
-            # Check if we've hit the container limit
             if len(self.sessions) >= self.max_containers:
-                logger.warning(
-                    "Maximum container limit (%d) reached", self.max_containers)
                 raise Exception("Maximum number of containers reached")
 
             if user_id in self.user_sessions:
@@ -461,56 +456,47 @@ class TTYController:
                     "User %s has existing session %s, cleaning up", user_id, old_ws_id)
                 self.cleanup_session(old_ws_id)
 
-            try:
-                # Resolve image and security profile from course config
-                course_config = COURSES.get(course, {}) if course else {}
-                profile = course_config.get('profile', 'strict')
-                image = course_config.get('image') or os.environ.get(
-                    'CONTAINER_IMAGE', 'git.torden.tech/jonasbg/terminal-linux-1:latest')
+        try:
+            # Resolve image and security profile from course config
+            course_config = COURSES.get(course, {}) if course else {}
+            profile = course_config.get('profile', 'strict')
+            image = course_config.get('image') or os.environ.get(
+                'CONTAINER_IMAGE', 'git.torden.tech/jonasbg/terminal-linux-1:latest')
 
-                # Build per-course overrides for resource limits
-                overrides = {}
-                if course_config.get('pids_limit'):
-                    overrides['pids_limit'] = course_config['pids_limit']
-                if course_config.get('mem_limit'):
-                    overrides['mem_limit'] = course_config['mem_limit']
+            overrides = {}
+            if course_config.get('pids_limit'):
+                overrides['pids_limit'] = course_config['pids_limit']
+            if course_config.get('mem_limit'):
+                overrides['mem_limit'] = course_config['mem_limit']
 
-                logger.info("Starting container with image: %s (profile: %s)", image, profile)
+            logger.info("Starting container with image: %s (profile: %s)", image, profile)
 
-                kwargs = self._get_container_kwargs(profile, ws_id, user_id, image, overrides)
-                container = self.client.containers.run(image, **kwargs)
+            kwargs = self._get_container_kwargs(profile, ws_id, user_id, image, overrides)
+            container = self.client.containers.run(image, **kwargs)
 
-                # First set the terminal size
-                stty_exec = self.client.api.exec_create(
-                    container.id,
-                    'stty cols 142',
-                    stdin=True,
-                    tty=True
-                )
-                self.client.api.exec_start(stty_exec['Id'])
+            # Start the shell (client sends resize after container_ready)
+            exec_create = self.client.api.exec_create(
+                container.id,
+                '/usr/local/bin/sh -l',
+                stdin=True,
+                tty=True
+            )
 
-                # Then start the shell
-                exec_create = self.client.api.exec_create(
-                    container.id,
-                    '/usr/local/bin/sh -l',
-                    stdin=True,
-                    tty=True
-                )
+            exec_socket = self.client.api.exec_start(
+                exec_create['Id'],
+                socket=True,
+                tty=True
+            )
 
-                exec_socket = self.client.api.exec_start(
-                    exec_create['Id'],
-                    socket=True,
-                    tty=True
-                )
+            log_file = self.logger.create_session_log(
+                container.id,
+                user_id,
+                ws_id,
+                request
+            )
 
-                # Pass request object to logger
-                log_file = self.logger.create_session_log(
-                    container.id,
-                    user_id,
-                    ws_id,
-                    request
-                )
-
+            # Only hold lock for dict mutations
+            with self.lock:
                 self.sessions[ws_id] = {
                     'container': container,
                     'exec_id': exec_create['Id'],
@@ -523,22 +509,22 @@ class TTYController:
                 }
                 self.user_sessions[user_id] = ws_id
 
-                def cleanup_after_lifetime():
-                    eventlet.sleep(self.container_lifetime)
-                    self.cleanup_session(ws_id)
+            def cleanup_after_lifetime():
+                eventlet.sleep(self.container_lifetime)
+                self.cleanup_session(ws_id)
 
-                eventlet.spawn_n(cleanup_after_lifetime)
+            eventlet.spawn_n(cleanup_after_lifetime)
 
-                logger.info(
-                    "Container %s created successfully for user %s", container.id[:12], user_id)
-                return container.id
+            logger.info(
+                "Container %s created for user %s", container.id[:12], user_id)
+            return container.id
 
-            except Exception as e:
-                logger.error(
-                    "Failed to create container for user %s: %s", user_id, e)
-                if ws_id in self.sessions:
-                    self.cleanup_session(ws_id)
-                raise
+        except Exception as e:
+            logger.error(
+                "Failed to create container for user %s: %s", user_id, e)
+            if ws_id in self.sessions:
+                self.cleanup_session(ws_id)
+            raise
 
     def write_to_container(self, ws_id, data):
         if ws_id not in self.sessions:
@@ -743,61 +729,43 @@ class TTYController:
 
     def create_shell(self, ws_id, tab_id, user_id, request=None):
         """Create a new shell in an existing container session"""
+        # Read session state under lock, then release before Docker API calls
         with self.lock:
-            logger.info(
-                "Creating new shell for session %s (tab: %s, user: %s)", ws_id, tab_id, user_id)
-
             if ws_id not in self.sessions:
-                logger.error("Session %s not found", ws_id)
                 raise Exception(f"Session not found: {ws_id}")
-
             session = self.sessions[ws_id]
             container = session.get('container')
-
             if not container:
-                logger.error("Container not found in session %s", ws_id)
                 raise Exception("Container not found in session")
 
-            try:
-                # First set the terminal size
-                stty_exec = self.client.api.exec_create(
-                    container.id,
-                    'stty cols 142',
-                    stdin=True,
-                    tty=True
-                )
-                self.client.api.exec_start(stty_exec['Id'])
+        try:
+            # Create a new shell process (client sends resize after)
+            exec_create = self.client.api.exec_create(
+                container.id,
+                '/usr/local/bin/sh -l',
+                stdin=True,
+                tty=True
+            )
 
-                # Create a new shell process
-                exec_create = self.client.api.exec_create(
-                    container.id,
-                    '/usr/local/bin/sh -l',
-                    stdin=True,
-                    tty=True
-                )
+            exec_socket = self.client.api.exec_start(
+                exec_create['Id'],
+                socket=True,
+                tty=True
+            )
 
-                exec_socket = self.client.api.exec_start(
-                    exec_create['Id'],
-                    socket=True,
-                    tty=True
-                )
+            shell_id = f"shell-{uuid.uuid4()}"
 
-                # Generate a unique shell ID
-                shell_id = f"shell-{uuid.uuid4()}"
+            log_file = self.logger.create_session_log(
+                container.id,
+                user_id,
+                shell_id,
+                request
+            )
 
-                # Create log file for the shell
-                log_file = self.logger.create_session_log(
-                    container.id,
-                    user_id,
-                    shell_id,
-                    request
-                )
-
-                # If session doesn't have a shells dictionary, create one
+            # Only hold lock for the dict mutation
+            with self.lock:
                 if 'shells' not in session:
                     session['shells'] = {}
-
-                # Add the new shell to the session
                 session['shells'][shell_id] = {
                     'exec_id': exec_create['Id'],
                     'socket': exec_socket,
@@ -808,14 +776,14 @@ class TTYController:
                     'command_complete': False
                 }
 
-                logger.info(
-                    "Shell %s created successfully for session %s", shell_id, ws_id)
-                return shell_id
+            logger.info(
+                "Shell %s created for session %s", shell_id, ws_id)
+            return shell_id
 
-            except Exception as e:
-                logger.error(
-                    "Failed to create shell for session %s: %s", ws_id, e)
-                raise
+        except Exception as e:
+            logger.error(
+                "Failed to create shell for session %s: %s", ws_id, e)
+            raise
 
     def _check_shell_command_timeout(self, ws_id, shell_id, shell):
         """Check if a command in a shell has timed out and should be finalized"""
