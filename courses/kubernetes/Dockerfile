@@ -30,7 +30,7 @@ RUN addgroup -g 1000 termuser && \
 RUN mkdir -p /usr/local/bin
 
 # vi for kubectl edit, base64 for decoding secrets
-RUN for cmd in sh sed stty cat cd cp echo grep head less ls base64 cut sleep pwd mkdir rm tail vi tput clear wc which; do \
+RUN for cmd in sh sed stty cat cd cp echo grep head less ls base64 cut sleep pwd mkdir rm tail vi tput clear wc which curl; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \
