@@ -16,6 +16,26 @@ Mutable tags are convenient but weak:
 
 - `python:3.12-alpine` can change over time
 - `python@sha256:...` points to one exact image
+- `python:3.12-alpine@sha256:...` gives you both the human-friendly tag and the machine-pinned digest
+
+For teaching and for real CI/CD systems, this is usually the best format:
+
+```text
+image:tag@sha256:digest
+```
+
+Why:
+
+- the **tag** helps humans understand what they intended to use
+- the **digest** is what actually pins the artifact
+
+If the tag later moves in the registry, the digest still pins the original image.
+
+That means:
+
+- `image:tag` is mutable
+- `image@sha256:digest` is immutable but less readable
+- `image:tag@sha256:digest` gives you both readability and reproducibility
 
 In CI/CD, tags are often used for discovery while digests are used for promotion.
 
@@ -50,6 +70,18 @@ Inspect digests:
 docker image inspect localhost/supply-chain-insecure | jq '.[0] | {Id, RepoTags, RepoDigests}'
 docker image inspect localhost/supply-chain-hardened | jq '.[0] | {Id, RepoTags, RepoDigests}'
 ```
+
+Look closely at `RepoDigests`.
+
+That is the immutable identity you want machines to rely on.
+
+If you were writing a deployment reference for humans and machines together, prefer:
+
+```text
+localhost/supply-chain-hardened:latest@sha256:...
+```
+
+The tag can still communicate intent, but the digest is what locks the result.
 
 ## Part 3: Scan with Trivy
 
@@ -157,6 +189,16 @@ This is where `Git Signing` fits in conceptually:
 - image scanning helps you understand what you are shipping
 - SBOMs help you inventory components
 - policy gates decide whether release should proceed
+
+## Key takeaway
+
+When you need a reference that works for both humans and machines, prefer:
+
+```text
+image:tag@sha256:digest
+```
+
+That format keeps the tag for readability and the digest for immutability.
 
 ---
 

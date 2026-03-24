@@ -11,6 +11,7 @@ Learn how to trust, verify, and gate what gets shipped.
 ## What you'll learn
 
 - why tags are mutable and digests are safer
+- why `image:tag@sha256:digest` is often the best practical reference form
 - how to scan images with Trivy
 - how to generate and inspect an SBOM
 - how CI/CD gates turn findings into delivery policy
