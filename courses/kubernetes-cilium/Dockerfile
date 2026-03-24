@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.22-alpine AS builder
+FROM docker.io/library/golang:1.26-alpine AS builder
 WORKDIR /app
 COPY kubernetes/go.mod ./go.mod
 COPY kubernetes/main.go ./main.go
