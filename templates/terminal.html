@@ -414,7 +414,7 @@
             margin: 0 0 0.6rem;
             overflow-x: auto;
         }
-        .guide-content pre {
+        .code-block {
             position: relative;
         }
 
@@ -433,9 +433,10 @@
             font-size: 11px;
             opacity: 0;
             transition: opacity 0.15s;
+            z-index: 1;
         }
 
-        .guide-content pre:hover .copy-btn { opacity: 1; }
+        .code-block:hover .copy-btn { opacity: 1; }
         .copy-btn:hover { color: #fff; background: rgba(255,255,255,0.15); }
         .copy-btn.copied { color: #6f6; }
 
@@ -612,6 +613,11 @@
 
             // Add copy buttons to code blocks
             el.querySelectorAll('pre').forEach(pre => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-block';
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(pre);
+
                 const btn = document.createElement('button');
                 btn.className = 'copy-btn';
                 btn.innerHTML = '<i class="fa-solid fa-copy"></i>';
@@ -625,7 +631,7 @@
                         btn.classList.remove('copied');
                     }, 1500);
                 };
-                pre.appendChild(btn);
+                wrapper.appendChild(btn);
             });
 
             // Make inline code clickable to copy
