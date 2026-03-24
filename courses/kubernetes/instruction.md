@@ -184,7 +184,7 @@ In a real cluster, logs come from the container's stdout/stderr. Here they're pr
 ### 4.1 Edit a deployment
 
 ```
-kubectl edit deployment nginx
+kedit deployment nginx
 ```
 
 This opens the deployment YAML in vim. Try changing `replicas: 2` to `replicas: 3`, then save (`:wq`).
@@ -198,7 +198,7 @@ In a real cluster, Kubernetes would create a new pod. Here the API stores your c
 ### 4.2 Edit a configmap
 
 ```
-kubectl edit configmap app-config
+kedit configmap app-config
 ```
 
 Change `LOG_LEVEL` from `info` to `debug`. Save.

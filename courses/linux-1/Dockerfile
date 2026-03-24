@@ -15,7 +15,7 @@ RUN addgroup -g 1000 termuser && \
 RUN mkdir -p /usr/local/bin
 
 # Copy allowed executables and secure system binary locations
-RUN for cmd in sh sed stty cat cd cp echo grep head less ls cut tail pwd tput clear wc which nano printenv env; do \
+RUN for cmd in sh sed stty cat cd cp echo grep head less ls cut tail pwd tput clear wc which nano vi printenv env; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \
@@ -60,7 +60,7 @@ export TERM=xterm-256color
 
 # Environment variables
 export LANG=nb_NO.UTF-8
-export EDITOR=/usr/local/bin/nano
+export EDITOR=/usr/local/bin/vi
 export HOME=/home/termuser
 export LESS=-FRX
 
@@ -71,6 +71,7 @@ alias ll='/usr/local/bin/ls -la'
 alias l='/usr/local/bin/ls -l'
 alias ..='cd ..'
 alias cls='/usr/local/bin/clear'
+alias vim='vi'
 
 EOF
 

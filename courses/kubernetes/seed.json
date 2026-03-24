@@ -1,0 +1,1032 @@
+{
+  "resources": [
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "default",
+        "uid": "seed-1001",
+        "creationTimestamp": "2026-03-20T09:00:00Z",
+        "resourceVersion": "1001"
+      },
+      "status": {
+        "phase": "Active"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "kube-system",
+        "uid": "seed-1002",
+        "creationTimestamp": "2026-03-20T09:00:00Z",
+        "resourceVersion": "1002"
+      },
+      "status": {
+        "phase": "Active"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "production",
+        "uid": "seed-1003",
+        "creationTimestamp": "2026-03-20T09:00:00Z",
+        "resourceVersion": "1003"
+      },
+      "status": {
+        "phase": "Active"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "argocd",
+        "uid": "seed-1004",
+        "creationTimestamp": "2026-03-20T09:00:00Z",
+        "resourceVersion": "1004"
+      },
+      "status": {
+        "phase": "Active"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Node",
+      "metadata": {
+        "name": "talos-y5r-o5m",
+        "uid": "seed-1101",
+        "creationTimestamp": "2025-10-03T09:00:00Z",
+        "resourceVersion": "1101",
+        "labels": {
+          "kubernetes.io/hostname": "talos-y5r-o5m",
+          "kubernetes.io/os": "linux",
+          "kubernetes.io/arch": "arm64",
+          "node.kubernetes.io/instance-type": "talos",
+          "node-role.kubernetes.io/control-plane": ""
+        }
+      },
+      "spec": {
+        "podCIDR": "10.244.0.0/24",
+        "taints": [
+          {
+            "key": "node-role.kubernetes.io/control-plane",
+            "effect": "NoSchedule"
+          }
+        ]
+      },
+      "status": {
+        "capacity": {
+          "cpu": "4",
+          "memory": "8192Mi",
+          "pods": "110"
+        },
+        "allocatable": {
+          "cpu": "3800m",
+          "memory": "7680Mi",
+          "pods": "110"
+        },
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True",
+            "reason": "KubeletReady",
+            "message": "kubelet is posting ready status"
+          }
+        ],
+        "addresses": [
+          {
+            "type": "InternalIP",
+            "address": "192.168.1.10"
+          },
+          {
+            "type": "Hostname",
+            "address": "talos-y5r-o5m"
+          }
+        ],
+        "nodeInfo": {
+          "kernelVersion": "6.6.54-talos",
+          "osImage": "Talos (v1.8.1)",
+          "containerRuntimeVersion": "containerd://2.0.0",
+          "kubeletVersion": "v1.34.0",
+          "kubeProxyVersion": "v1.34.0",
+          "operatingSystem": "linux",
+          "architecture": "arm64"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Node",
+      "metadata": {
+        "name": "talos-q7r-qa3",
+        "uid": "seed-1102",
+        "creationTimestamp": "2025-10-03T09:00:00Z",
+        "resourceVersion": "1102",
+        "labels": {
+          "kubernetes.io/hostname": "talos-q7r-qa3",
+          "kubernetes.io/os": "linux",
+          "kubernetes.io/arch": "arm64",
+          "node.kubernetes.io/instance-type": "talos"
+        }
+      },
+      "spec": {
+        "podCIDR": "10.244.1.0/24"
+      },
+      "status": {
+        "capacity": {
+          "cpu": "4",
+          "memory": "8192Mi",
+          "pods": "110"
+        },
+        "allocatable": {
+          "cpu": "3800m",
+          "memory": "7680Mi",
+          "pods": "110"
+        },
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True",
+            "reason": "KubeletReady",
+            "message": "kubelet is posting ready status"
+          }
+        ],
+        "addresses": [
+          {
+            "type": "InternalIP",
+            "address": "192.168.1.11"
+          },
+          {
+            "type": "Hostname",
+            "address": "talos-q7r-qa3"
+          }
+        ],
+        "nodeInfo": {
+          "kernelVersion": "6.6.54-talos",
+          "osImage": "Talos (v1.8.1)",
+          "containerRuntimeVersion": "containerd://2.0.0",
+          "kubeletVersion": "v1.34.0",
+          "kubeProxyVersion": "v1.34.0",
+          "operatingSystem": "linux",
+          "architecture": "arm64"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Node",
+      "metadata": {
+        "name": "talos-13q-0n4",
+        "uid": "seed-1103",
+        "creationTimestamp": "2026-02-08T09:00:00Z",
+        "resourceVersion": "1103",
+        "labels": {
+          "kubernetes.io/hostname": "talos-13q-0n4",
+          "kubernetes.io/os": "linux",
+          "kubernetes.io/arch": "arm64",
+          "node.kubernetes.io/instance-type": "talos"
+        }
+      },
+      "spec": {
+        "podCIDR": "10.244.2.0/24"
+      },
+      "status": {
+        "capacity": {
+          "cpu": "4",
+          "memory": "8192Mi",
+          "pods": "110"
+        },
+        "allocatable": {
+          "cpu": "3800m",
+          "memory": "7680Mi",
+          "pods": "110"
+        },
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True",
+            "reason": "KubeletReady",
+            "message": "kubelet is posting ready status"
+          }
+        ],
+        "addresses": [
+          {
+            "type": "InternalIP",
+            "address": "192.168.1.12"
+          },
+          {
+            "type": "Hostname",
+            "address": "talos-13q-0n4"
+          }
+        ],
+        "nodeInfo": {
+          "kernelVersion": "6.6.54-talos",
+          "osImage": "Talos (v1.8.1)",
+          "containerRuntimeVersion": "containerd://2.0.0",
+          "kubeletVersion": "v1.34.0",
+          "kubeProxyVersion": "v1.34.0",
+          "operatingSystem": "linux",
+          "architecture": "arm64"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "coredns-5dd5756b68-xk9r2",
+        "namespace": "kube-system",
+        "uid": "seed-1201",
+        "creationTimestamp": "2026-03-20T09:10:00Z",
+        "resourceVersion": "1201",
+        "labels": {
+          "k8s-app": "kube-dns",
+          "pod-template-hash": "5dd5756b68"
+        }
+      },
+      "spec": {
+        "nodeName": "talos-y5r-o5m",
+        "containers": [
+          {
+            "name": "coredns",
+            "image": "registry.k8s.io/coredns/coredns:v1.11.1",
+            "ports": [
+              {
+                "containerPort": 53,
+                "protocol": "UDP"
+              },
+              {
+                "containerPort": 53,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.0.2",
+        "hostIP": "192.168.1.10",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "coredns",
+            "ready": true,
+            "restartCount": 0,
+            "image": "registry.k8s.io/coredns/coredns:v1.11.1"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "nginx",
+        "namespace": "default",
+        "uid": "seed-1301",
+        "creationTimestamp": "2026-03-21T09:00:00Z",
+        "resourceVersion": "1301",
+        "labels": {
+          "app": "nginx"
+        }
+      },
+      "spec": {
+        "replicas": 2,
+        "selector": {
+          "matchLabels": {
+            "app": "nginx"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "nginx",
+              "pod-template-hash": "7d4f8b7b94"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "nginx",
+                "image": "nginx:1.25",
+                "ports": [
+                  {
+                    "containerPort": 80
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "status": {
+        "replicas": 2,
+        "readyReplicas": 2,
+        "availableReplicas": 2,
+        "updatedReplicas": 2
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "ReplicaSet",
+      "metadata": {
+        "name": "nginx-7d4f8b7b94",
+        "namespace": "default",
+        "uid": "seed-1302",
+        "creationTimestamp": "2026-03-21T09:00:00Z",
+        "resourceVersion": "1302",
+        "labels": {
+          "app": "nginx",
+          "pod-template-hash": "7d4f8b7b94"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "name": "nginx"
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 2,
+        "selector": {
+          "matchLabels": {
+            "app": "nginx",
+            "pod-template-hash": "7d4f8b7b94"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "nginx",
+              "pod-template-hash": "7d4f8b7b94"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "nginx",
+                "image": "nginx:1.25",
+                "ports": [
+                  {
+                    "containerPort": 80
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "status": {
+        "replicas": 2,
+        "readyReplicas": 2,
+        "availableReplicas": 2
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "nginx-7d4f8b7b94-abc12",
+        "namespace": "default",
+        "uid": "seed-1303",
+        "creationTimestamp": "2026-03-21T09:10:00Z",
+        "resourceVersion": "1303",
+        "labels": {
+          "app": "nginx",
+          "pod-template-hash": "7d4f8b7b94"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "nginx-7d4f8b7b94"
+          }
+        ]
+      },
+      "spec": {
+        "nodeName": "talos-q7r-qa3",
+        "containers": [
+          {
+            "name": "nginx",
+            "image": "nginx:1.25",
+            "ports": [
+              {
+                "containerPort": 80
+              }
+            ]
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.1.10",
+        "hostIP": "192.168.1.11",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "nginx",
+            "ready": true,
+            "restartCount": 0,
+            "image": "nginx:1.25"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "nginx-7d4f8b7b94-def34",
+        "namespace": "default",
+        "uid": "seed-1304",
+        "creationTimestamp": "2026-03-21T09:11:00Z",
+        "resourceVersion": "1304",
+        "labels": {
+          "app": "nginx",
+          "pod-template-hash": "7d4f8b7b94"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "nginx-7d4f8b7b94"
+          }
+        ]
+      },
+      "spec": {
+        "nodeName": "talos-13q-0n4",
+        "containers": [
+          {
+            "name": "nginx",
+            "image": "nginx:1.25",
+            "ports": [
+              {
+                "containerPort": 80
+              }
+            ]
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.2.10",
+        "hostIP": "192.168.1.12",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "nginx",
+            "ready": true,
+            "restartCount": 0,
+            "image": "nginx:1.25"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "nginx",
+        "namespace": "default",
+        "uid": "seed-1305",
+        "creationTimestamp": "2026-03-21T09:00:00Z",
+        "resourceVersion": "1305"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "clusterIP": "10.96.100.50",
+        "ports": [
+          {
+            "port": 80,
+            "targetPort": 80,
+            "protocol": "TCP"
+          }
+        ],
+        "selector": {
+          "app": "nginx"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "app-config",
+        "namespace": "default",
+        "uid": "seed-1306",
+        "creationTimestamp": "2026-03-21T09:00:00Z",
+        "resourceVersion": "1306"
+      },
+      "data": {
+        "LOG_LEVEL": "info",
+        "MAX_CONNECTIONS": "100"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "api-server",
+        "namespace": "production",
+        "uid": "seed-1401",
+        "creationTimestamp": "2026-03-20T10:00:00Z",
+        "resourceVersion": "1401",
+        "labels": {
+          "app": "api-server"
+        }
+      },
+      "spec": {
+        "replicas": 3,
+        "selector": {
+          "matchLabels": {
+            "app": "api-server"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "api-server",
+              "pod-template-hash": "6b8f9c7d55"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "api",
+                "image": "mycompany/api-server:2.1.0",
+                "ports": [
+                  {
+                    "containerPort": 8080
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "status": {
+        "replicas": 3,
+        "readyReplicas": 3,
+        "availableReplicas": 3,
+        "updatedReplicas": 3
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "ReplicaSet",
+      "metadata": {
+        "name": "api-server-6b8f9c7d55",
+        "namespace": "production",
+        "uid": "seed-1402",
+        "creationTimestamp": "2026-03-20T10:00:00Z",
+        "resourceVersion": "1402",
+        "labels": {
+          "app": "api-server",
+          "pod-template-hash": "6b8f9c7d55"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "name": "api-server"
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 3,
+        "selector": {
+          "matchLabels": {
+            "app": "api-server",
+            "pod-template-hash": "6b8f9c7d55"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "api-server",
+              "pod-template-hash": "6b8f9c7d55"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "api",
+                "image": "mycompany/api-server:2.1.0",
+                "ports": [
+                  {
+                    "containerPort": 8080
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "status": {
+        "replicas": 3,
+        "readyReplicas": 3,
+        "availableReplicas": 3
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "api-server-6b8f9c7d55-ghi56",
+        "namespace": "production",
+        "uid": "seed-1403",
+        "creationTimestamp": "2026-03-20T10:05:00Z",
+        "resourceVersion": "1403",
+        "labels": {
+          "app": "api-server",
+          "pod-template-hash": "6b8f9c7d55"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "api-server-6b8f9c7d55"
+          }
+        ]
+      },
+      "spec": {
+        "nodeName": "talos-q7r-qa3",
+        "containers": [
+          {
+            "name": "api",
+            "image": "mycompany/api-server:2.1.0",
+            "ports": [
+              {
+                "containerPort": 8080
+              }
+            ]
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.1.20",
+        "hostIP": "192.168.1.11",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "api",
+            "ready": true,
+            "restartCount": 0,
+            "image": "mycompany/api-server:2.1.0"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "api-server-6b8f9c7d55-jkl78",
+        "namespace": "production",
+        "uid": "seed-1404",
+        "creationTimestamp": "2026-03-20T10:06:00Z",
+        "resourceVersion": "1404",
+        "labels": {
+          "app": "api-server",
+          "pod-template-hash": "6b8f9c7d55"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "api-server-6b8f9c7d55"
+          }
+        ]
+      },
+      "spec": {
+        "nodeName": "talos-13q-0n4",
+        "containers": [
+          {
+            "name": "api",
+            "image": "mycompany/api-server:2.1.0",
+            "ports": [
+              {
+                "containerPort": 8080
+              }
+            ]
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.2.20",
+        "hostIP": "192.168.1.12",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "api",
+            "ready": true,
+            "restartCount": 1,
+            "image": "mycompany/api-server:2.1.0"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "api-server-6b8f9c7d55-mno90",
+        "namespace": "production",
+        "uid": "seed-1405",
+        "creationTimestamp": "2026-03-20T10:07:00Z",
+        "resourceVersion": "1405",
+        "labels": {
+          "app": "api-server",
+          "pod-template-hash": "6b8f9c7d55"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "api-server-6b8f9c7d55"
+          }
+        ]
+      },
+      "spec": {
+        "nodeName": "talos-q7r-qa3",
+        "containers": [
+          {
+            "name": "api",
+            "image": "mycompany/api-server:2.1.0",
+            "ports": [
+              {
+                "containerPort": 8080
+              }
+            ]
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.1.21",
+        "hostIP": "192.168.1.11",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "api",
+            "ready": true,
+            "restartCount": 2,
+            "image": "mycompany/api-server:2.1.0"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "StatefulSet",
+      "metadata": {
+        "name": "postgres",
+        "namespace": "production",
+        "uid": "seed-1406",
+        "creationTimestamp": "2026-03-20T10:00:00Z",
+        "resourceVersion": "1406",
+        "labels": {
+          "app": "postgres"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "serviceName": "postgres",
+        "selector": {
+          "matchLabels": {
+            "app": "postgres"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "postgres"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "postgres",
+                "image": "postgres:16",
+                "ports": [
+                  {
+                    "containerPort": 5432
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "status": {
+        "replicas": 1,
+        "readyReplicas": 1,
+        "currentReplicas": 1
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "postgres-0",
+        "namespace": "production",
+        "uid": "seed-1407",
+        "creationTimestamp": "2026-03-20T10:05:00Z",
+        "resourceVersion": "1407",
+        "labels": {
+          "app": "postgres",
+          "statefulset.kubernetes.io/pod-name": "postgres-0"
+        }
+      },
+      "spec": {
+        "nodeName": "talos-q7r-qa3",
+        "containers": [
+          {
+            "name": "postgres",
+            "image": "postgres:16",
+            "ports": [
+              {
+                "containerPort": 5432
+              }
+            ]
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.1.30",
+        "hostIP": "192.168.1.11",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "postgres",
+            "ready": true,
+            "restartCount": 0,
+            "image": "postgres:16"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "api-config",
+        "namespace": "production",
+        "uid": "seed-1408",
+        "creationTimestamp": "2026-03-20T10:00:00Z",
+        "resourceVersion": "1408"
+      },
+      "data": {
+        "DATABASE_HOST": "postgres.production.svc.cluster.local",
+        "DATABASE_PORT": "5432",
+        "DATABASE_NAME": "appdb",
+        "LOG_LEVEL": "warn"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Secret",
+      "metadata": {
+        "name": "db-credentials",
+        "namespace": "production",
+        "uid": "seed-1409",
+        "creationTimestamp": "2026-03-20T10:00:00Z",
+        "resourceVersion": "1409"
+      },
+      "type": "Opaque",
+      "data": {
+        "username": "YWRtaW4=",
+        "password": "czNjcjN0LXBhc3N3MHJk"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "postgres",
+        "namespace": "production",
+        "uid": "seed-1410",
+        "creationTimestamp": "2026-03-20T10:00:00Z",
+        "resourceVersion": "1410"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "clusterIP": "10.96.200.10",
+        "ports": [
+          {
+            "port": 5432,
+            "targetPort": 5432,
+            "protocol": "TCP"
+          }
+        ],
+        "selector": {
+          "app": "postgres"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "api-server",
+        "namespace": "production",
+        "uid": "seed-1411",
+        "creationTimestamp": "2026-03-20T10:00:00Z",
+        "resourceVersion": "1411"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "clusterIP": "10.96.200.20",
+        "ports": [
+          {
+            "port": 80,
+            "targetPort": 8080,
+            "protocol": "TCP"
+          }
+        ],
+        "selector": {
+          "app": "api-server"
+        }
+      }
+    },
+    {
+      "apiVersion": "argoproj.io/v1alpha1",
+      "kind": "Application",
+      "metadata": {
+        "name": "api-server",
+        "namespace": "argocd",
+        "uid": "seed-1501",
+        "creationTimestamp": "2026-03-20T12:00:00Z",
+        "resourceVersion": "1501"
+      },
+      "spec": {
+        "project": "production",
+        "source": {
+          "repoURL": "https://github.com/example/infra.git",
+          "path": "apps/api-server",
+          "targetRevision": "HEAD"
+        },
+        "destination": {
+          "server": "https://kubernetes.default.svc",
+          "namespace": "production"
+        }
+      },
+      "status": {
+        "sync": {
+          "status": "Synced"
+        },
+        "health": {
+          "status": "Healthy"
+        }
+      }
+    }
+  ],
+  "logs": {
+    "kube-system/coredns-5dd5756b68-xk9r2": "[INFO] plugin/reload: Running configuration SHA512 = abc123def456\n[INFO] CoreDNS-1.11.1\n[INFO] plugin/kubernetes: starting with in-cluster config\n",
+    "default/nginx-7d4f8b7b94-abc12": "172.17.0.1 - - [24/Mar/2026:10:00:01 +0000] \"GET / HTTP/1.1\" 200 615 \"-\" \"curl/8.5.0\"\n172.17.0.1 - - [24/Mar/2026:10:00:02 +0000] \"GET /healthz HTTP/1.1\" 200 2 \"-\" \"kube-probe/1.31\"\n",
+    "production/postgres-0": "2026-03-24 10:00:00.000 UTC [1] LOG: starting PostgreSQL 16.2\n2026-03-24 10:00:00.100 UTC [1] LOG: listening on IPv4 address \"0.0.0.0\", port 5432\n"
+  }
+}

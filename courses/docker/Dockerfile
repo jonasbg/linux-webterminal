@@ -110,7 +110,7 @@ export TERM=xterm-256color
 
 # Environment variables
 export LANG=nb_NO.UTF-8
-export EDITOR=/usr/local/bin/vim
+export EDITOR=/usr/local/bin/vi
 export HOME=/home/termuser
 export LESS=-FRX
 
@@ -122,6 +122,7 @@ alias l='/usr/local/bin/ls -l'
 alias ..='cd ..'
 alias cls='/usr/local/bin/clear'
 alias docker="podman"
+alias vim='vi'
 
 EOF
 

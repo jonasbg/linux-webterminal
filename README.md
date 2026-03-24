@@ -12,6 +12,7 @@ A secure web-based terminal platform that runs isolated containers per course/ta
 | **Container Fundamentals** | strict | Namespaces, cgroups, and the runtime stack |
 | **Docker Workshop** | relaxed | Podman-in-podman, multi-stage builds, Trivy, Hadolint |
 | **Kubernetes Basics** | strict | Real kubectl against a mock API server |
+| **Kubernetes Networking with Cilium** | strict | Pods, Services, Gateway API, and NetworkPolicy with a Cilium-focused dataplane model |
 
 ## Running locally
 
@@ -30,6 +31,7 @@ podman build -t git.torden.tech/jonasbg/terminal-linux-3:latest -f linux-3/Docke
 podman build -t git.torden.tech/jonasbg/terminal-containers:latest -f containers/Dockerfile containers/
 podman build -t git.torden.tech/jonasbg/terminal-docker:latest -f docker/Dockerfile docker/
 podman build -t git.torden.tech/jonasbg/terminal-kubernetes:latest -f kubernetes/Dockerfile kubernetes/
+podman build -t git.torden.tech/jonasbg/terminal-kubernetes-cilium:latest -f kubernetes-cilium/Dockerfile .
 ```
 
 Or with Docker Compose:

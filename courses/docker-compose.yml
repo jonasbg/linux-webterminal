@@ -24,6 +24,12 @@ services:
       context: ./kubernetes
     image: ghcr.io/jonasbg/linux-webterminal/terminal-kubernetes:latest
 
+  kubernetes-cilium:
+    build:
+      context: .
+      dockerfile: ./kubernetes-cilium/Dockerfile
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-kubernetes-cilium:latest
+
   docker:
     build:
       context: ./docker
