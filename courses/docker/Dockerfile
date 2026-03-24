@@ -1,3 +1,5 @@
+FROM docker.io/aquasec/trivy:0.69.3 AS trivy
+
 FROM alpine:latest
 
 # System dependencies including podman for container-in-container
@@ -8,8 +10,7 @@ RUN apk add --no-cache \
     ncurses-terminfo \
     ncurses-terminfo-base \
     podman \
-    shadow shadow-uidmap \
-    curl tar
+    shadow shadow-uidmap
 
 # Create non-root user first
 RUN addgroup -g 1000 termuser && \
@@ -39,9 +40,8 @@ RUN cp /bin/busybox /usr/local/bin/busybox
 COPY cat-wrapper /usr/local/bin/cat
 RUN chmod +x /usr/local/bin/cat
 
-# Install Trivy (arch-aware)
-COPY install_trivy.sh /tmp/install_trivy.sh
-RUN chmod +x /tmp/install_trivy.sh && /tmp/install_trivy.sh && rm /tmp/install_trivy.sh
+# Copy Trivy from the official image
+COPY --from=trivy /usr/local/bin/trivy /usr/local/bin/trivy
 
 # Copy workshop materials into the image
 COPY instructions.md /home/termuser/instructions.md
