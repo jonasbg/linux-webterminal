@@ -48,7 +48,8 @@ RUN chown termuser:termuser /home/termuser/instruction.md /home/termuser/insecur
 
 USER termuser
 RUN mkdir -p ~/.config/containers && \
-    echo -e "[storage]\ndriver = \"overlay\"" > ~/.config/containers/storage.conf
+    echo -e "[storage]\ndriver = \"overlay\"" > ~/.config/containers/storage.conf && \
+    git config --global core.pager cat
 
 COPY --chown=root:root <<-'EOF' /home/termuser/.config/cni/net.d/87-podman-bridge.conflist
 {

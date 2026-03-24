@@ -87,6 +87,7 @@ RUN chmod 444 /home/termuser/.profile
 
 # Switch to termuser
 USER termuser
+RUN git config --global core.pager cat
 WORKDIR /home/termuser
 
 # Force sh to use our profile
