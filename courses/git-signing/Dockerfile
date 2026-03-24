@@ -8,6 +8,8 @@ RUN apk add --no-cache \
     ncurses-terminfo \
     ncurses-terminfo-base
 
+RUN git config --system init.defaultBranch main
+
 # Create non-root user first
 RUN addgroup -g 1000 termuser && \
     adduser -D -u 1000 -G termuser termuser -h /home/termuser

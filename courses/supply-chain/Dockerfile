@@ -12,6 +12,8 @@ RUN apk add --no-cache \
     podman \
     shadow shadow-uidmap
 
+RUN git config --system init.defaultBranch main
+
 RUN addgroup -g 1000 termuser && \
     adduser -D -u 1000 -G termuser termuser -h /home/termuser
 
