@@ -39,12 +39,12 @@ COPY kubernetes/cat-wrapper /usr/local/bin/cat
 RUN chmod +x /usr/local/bin/cat
 
 COPY --from=builder /app/kube-mock /usr/local/bin/kube-mock
-COPY kubernetes-cilium/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY kubernetes-networking/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-COPY kubernetes-cilium/instruction.md /tmp/instruction.md
+COPY kubernetes-networking/instruction.md /tmp/instruction.md
 COPY kubernetes/kubeconfig.yaml /tmp/kubeconfig.yaml
-COPY kubernetes-cilium/seed.json /etc/kubernetes/mock-seed.json
+COPY kubernetes-networking/seed.json /etc/kubernetes/mock-seed.json
 RUN mkdir -p /home/termuser/.kube && \
     mv /tmp/instruction.md /home/termuser/instruction.md && \
     mv /tmp/kubeconfig.yaml /home/termuser/.kube/config && \

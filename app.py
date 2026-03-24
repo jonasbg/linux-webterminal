@@ -94,11 +94,11 @@ COURSES = {
         'mem_limit': '128m',
         'guides': ['/home/termuser/instruction.md'],
     },
-    'kubernetes-cilium': {
-        'title': 'Kubernetes Networking with Cilium',
+    'kubernetes-networking': {
+        'title': 'Kubernetes Networking',
         'description': 'Inspect Pods, Services, Gateway API, and NetworkPolicy with Cilium as the dataplane.',
         'long_description': 'Use the real kubectl binary against a mock Kubernetes API server focused on networking concepts. Explore Talos nodes, kubelet details, Cilium as a DaemonSet, Pod IPs, Services, NetworkPolicy, Gateway API resources, and see Pods get recreated with new IPs when scaled or deleted.',
-        'image': 'git.torden.tech/jonasbg/terminal-kubernetes-cilium:latest',
+        'image': 'git.torden.tech/jonasbg/terminal-kubernetes-networking:latest',
         'profile': 'strict',
         'group': 'Kubernetes',
         'order': 80,

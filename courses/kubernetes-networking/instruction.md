@@ -1,4 +1,4 @@
-# Kubernetes Networking with Cilium
+# Kubernetes Networking
 
 This lab uses the real `kubectl` binary against a mock Kubernetes API server with realistic cluster data.
 

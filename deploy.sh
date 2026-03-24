@@ -2,7 +2,7 @@
 set -e
 
 REPO_DIR="${HOME}/repo"
-COURSES="linux-1 linux-2 containers docker git-signing supply-chain kubernetes kubernetes-cilium"
+COURSES="linux-1 linux-2 containers docker git-signing supply-chain kubernetes kubernetes-networking"
 
 echo "=== Pulling latest ==="
 podman run --rm -v "${REPO_DIR}:/repo:Z" docker.io/alpine/git -C /repo pull
@@ -13,7 +13,7 @@ podman build -q -t terminal-server -f Dockerfile .
 
 for course in ${COURSES}; do
     echo "=== Building ${course} ==="
-    if [ "${course}" = "kubernetes-cilium" ]; then
+    if [ "${course}" = "kubernetes-networking" ]; then
         podman build -q -t "terminal-${course}:latest" -f "courses/${course}/Dockerfile" "courses/"
     else
         podman build -q -t "terminal-${course}:latest" -f "courses/${course}/Dockerfile" "courses/${course}/"

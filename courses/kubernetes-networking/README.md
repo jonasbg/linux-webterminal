@@ -4,7 +4,7 @@ duration: 60-90 min
 tags: [kubernetes, networking, cilium, gateway-api, networkpolicy, services]
 ---
 
-# Kubernetes Networking with Cilium
+# Kubernetes Networking
 
 Learn how Kubernetes networking fits together when Cilium provides the dataplane.
 

@@ -88,28 +88,9 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 1.5rem;
-            padding-top: 1rem;
+            padding: 2rem;
             max-width: 1100px;
             width: 100%;
-        }
-
-        .course-groups {
-            width: 100%;
-            max-width: 1100px;
-            padding: 0 2rem 2rem;
-            box-sizing: border-box;
-        }
-
-        .course-group {
-            margin-top: 2rem;
-        }
-
-        .course-group h2 {
-            font-size: 0.95rem;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin: 0;
         }
 
         .course-card {
@@ -460,10 +441,6 @@
         @media (max-width: 600px) {
             .courses {
                 grid-template-columns: 1fr;
-                padding-top: 1rem;
-            }
-
-            .course-groups {
                 padding: 0 1rem 1rem;
             }
 
@@ -501,7 +478,7 @@
         <p>Choose a task to get started. Each task spins up its own sandboxed environment.</p>
     </div>
 
-    <div class="course-groups" id="courses"></div>
+    <div class="courses" id="courses"></div>
 
     <div class="dialog-overlay" id="dialog-overlay">
         <div class="dialog">
@@ -520,7 +497,6 @@
                 </div>
                 <div class="dialog-sidebar">
                     <div>
-                        <span class="badge" id="dialog-badge"></span>
                         <div class="meta" id="dialog-meta"></div>
                     </div>
                     <div class="start-area">
@@ -544,7 +520,7 @@
             'git-signing': 'fa-brands fa-git-alt',
             'containers': 'fa-solid fa-cubes',
             'kubernetes': 'fa-solid fa-dharmachakra',
-            'kubernetes-cilium': 'fa-solid fa-dharmachakra',
+            'kubernetes-networking': 'fa-solid fa-dharmachakra',
             'supply-chain': 'fa-solid fa-shield-halved',
             'docker': 'fa-brands fa-docker',
         };
@@ -554,15 +530,10 @@
 
         function openDialog(course) {
             const icon = ICONS[course.slug] || 'fa-solid fa-terminal';
-            const badgeClass = course.profile === 'strict' ? 'badge-strict' : 'badge-relaxed';
-            const badgeLabel = course.profile === 'strict' ? 'Sandboxed' : 'Full Access';
 
             document.getElementById('dialog-icon').innerHTML = `<i class="${icon}"></i>`;
             document.getElementById('dialog-title').textContent = course.title;
-            document.getElementById('dialog-badge').className = `badge ${badgeClass}`;
-            document.getElementById('dialog-badge').textContent = badgeLabel;
             document.getElementById('dialog-meta').innerHTML =
-                `<p><i class="fa-solid fa-shield-halved"></i> ${badgeLabel}</p>` +
                 `<p><i class="fa-solid fa-clock"></i> Resets on exit</p>`;
             const guideParam = course.has_guide ? '&guide=1' : '';
             document.getElementById('dialog-start').href = `/terminal?course=${course.slug}${guideParam}`;
@@ -622,50 +593,27 @@
             if (e.key === 'Escape') closeDialog();
         });
 
-        const GROUP_ORDER = ['Linux', 'Containers', 'DevOps', 'Kubernetes'];
-
         fetch('/api/courses')
             .then(r => r.json())
             .then(courses => {
                 const container = document.getElementById('courses');
-                GROUP_ORDER.forEach(groupName => {
-                    const groupCourses = courses.filter(c => c.group === groupName);
-                    if (!groupCourses.length) return;
+                courses.forEach(c => {
+                    const icon = ICONS[c.slug] || 'fa-solid fa-terminal';
 
-                    const section = document.createElement('section');
-                    section.className = 'course-group';
-
-                    const heading = document.createElement('h2');
-                    heading.textContent = groupName;
-                    section.appendChild(heading);
-
-                    const grid = document.createElement('div');
-                    grid.className = 'courses';
-
-                    groupCourses.forEach(c => {
-                        const icon = ICONS[c.slug] || 'fa-solid fa-terminal';
-                        const badgeClass = c.profile === 'strict' ? 'badge-strict' : 'badge-relaxed';
-                        const badgeLabel = c.profile === 'strict' ? 'Sandboxed' : 'Full Access';
-
-                        const card = document.createElement('div');
-                        card.className = 'course-card';
-                        card.innerHTML = `
-                            <div class="icon"><i class="${icon}"></i></div>
-                            <span class="badge ${badgeClass}">${badgeLabel}</span>
-                            <h2>${c.title}</h2>
-                            <p>${c.description}</p>
-                            <div class="card-actions">
-                                <a href="/terminal?course=${c.slug}${c.has_guide ? '&guide=1' : ''}" class="btn btn-primary" onclick="event.stopPropagation()">
-                                    <i class="fa-solid fa-play"></i> Start
-                                </a>
-                            </div>
-                        `;
-                        card.addEventListener('click', () => openDialog(c));
-                        grid.appendChild(card);
-                    });
-
-                    section.appendChild(grid);
-                    container.appendChild(section);
+                    const card = document.createElement('div');
+                    card.className = 'course-card';
+                    card.innerHTML = `
+                        <div class="icon"><i class="${icon}"></i></div>
+                        <h2>${c.title}</h2>
+                        <p>${c.description}</p>
+                        <div class="card-actions">
+                            <a href="/terminal?course=${c.slug}${c.has_guide ? '&guide=1' : ''}" class="btn btn-primary" onclick="event.stopPropagation()">
+                                <i class="fa-solid fa-play"></i> Start
+                            </a>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => openDialog(c));
+                    container.appendChild(card);
                 });
             });
     </script>

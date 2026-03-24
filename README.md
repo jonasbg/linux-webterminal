@@ -4,16 +4,16 @@ A secure web-based terminal platform that runs isolated containers per course/ta
 
 ## Courses
 
-| Course | Profile | Description |
-|--------|---------|-------------|
-| **Linux I** | strict | clmystery command-line challenge |
-| **Linux II** | strict | Process investigation - /proc, PIDs, file descriptors |
-| **Container Fundamentals** | strict | Namespaces, cgroups, and the runtime stack |
-| **Docker Workshop** | relaxed | Podman-in-podman, multi-stage builds, Trivy, Hadolint |
-| **Git Signing** | strict | GPG/SSH commit signing and verification |
-| **Supply Chain** | relaxed | Image scanning, SBOMs, digests, and simple CI/CD policy gates |
-| **Kubernetes Basics** | strict | Real kubectl against a mock API server |
-| **Kubernetes Networking with Cilium** | strict | Pods, Services, Gateway API, and NetworkPolicy with a Cilium-focused dataplane model |
+| Course | Description |
+|--------|-------------|
+| **Linux I** | clmystery command-line challenge |
+| **Linux II** | Process investigation - /proc, PIDs, file descriptors |
+| **Container Fundamentals** | Namespaces, cgroups, and the runtime stack |
+| **Docker Workshop** | Podman-in-podman, multi-stage builds, Trivy, Hadolint |
+| **Git Signing** | GPG/SSH commit signing and verification |
+| **Supply Chain** | Image scanning, SBOMs, digests, and simple CI/CD policy gates |
+| **Kubernetes Basics** | Real kubectl against a mock API server |
+| **Kubernetes Networking** | Pods, Services, Gateway API, and NetworkPolicy with a Cilium-focused dataplane model |
 
 ## Running locally
 
@@ -33,7 +33,7 @@ podman build -t git.torden.tech/jonasbg/terminal-docker:latest -f docker/Dockerf
 podman build -t git.torden.tech/jonasbg/terminal-git-signing:latest -f git-signing/Dockerfile git-signing/
 podman build -t git.torden.tech/jonasbg/terminal-supply-chain:latest -f supply-chain/Dockerfile supply-chain/
 podman build -t git.torden.tech/jonasbg/terminal-kubernetes:latest -f kubernetes/Dockerfile kubernetes/
-podman build -t git.torden.tech/jonasbg/terminal-kubernetes-cilium:latest -f kubernetes-cilium/Dockerfile .
+podman build -t git.torden.tech/jonasbg/terminal-kubernetes-networking:latest -f kubernetes-networking/Dockerfile .
 ```
 
 Or with Docker Compose:
@@ -41,6 +41,12 @@ Or with Docker Compose:
 ```bash
 cd courses
 docker compose build
+```
+
+Or with the deployment helper from the repo root:
+
+```bash
+./deploy.sh
 ```
 
 ### 2. Run the server
@@ -102,14 +108,16 @@ Images are served directly by the server (not from containers). They render with
 
 ## Security Profiles
 
-**Strict** (Linux I-III, Container Fundamentals, Kubernetes):
+These are internal runtime profiles used by the platform. They are not shown in the user-facing course cards.
+
+**Strict** (Linux I, Linux II, Container Fundamentals, Git Signing, Kubernetes):
 - No network access
 - Read-only filesystem (64MB tmpfs for /home and /tmp)
 - All capabilities dropped, no-new-privileges
 - 64MB memory, 10% CPU, 10 PIDs (configurable per course)
 - /proc entries masked
 
-**Relaxed** (Docker Workshop):
+**Relaxed** (Docker Workshop, Supply Chain):
 - Bridge networking (pull images from registries)
 - Privileged mode (podman-in-podman)
 - Writable filesystem
