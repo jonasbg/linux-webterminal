@@ -7,10 +7,11 @@ A secure web-based terminal platform that runs isolated containers per course/ta
 | Course | Profile | Description |
 |--------|---------|-------------|
 | **Linux I** | strict | clmystery command-line challenge |
-| **Linux II** | strict | Git signing - GPG/SSH commit signing |
-| **Linux III** | strict | Process investigation - /proc, PIDs, file descriptors |
+| **Linux II** | strict | Process investigation - /proc, PIDs, file descriptors |
 | **Container Fundamentals** | strict | Namespaces, cgroups, and the runtime stack |
 | **Docker Workshop** | relaxed | Podman-in-podman, multi-stage builds, Trivy, Hadolint |
+| **Git Signing** | strict | GPG/SSH commit signing and verification |
+| **Supply Chain** | relaxed | Image scanning, SBOMs, digests, and simple CI/CD policy gates |
 | **Kubernetes Basics** | strict | Real kubectl against a mock API server |
 | **Kubernetes Networking with Cilium** | strict | Pods, Services, Gateway API, and NetworkPolicy with a Cilium-focused dataplane model |
 
@@ -27,9 +28,10 @@ A secure web-based terminal platform that runs isolated containers per course/ta
 cd courses
 podman build -t git.torden.tech/jonasbg/terminal-linux-1:latest -f linux-1/Dockerfile linux-1/
 podman build -t git.torden.tech/jonasbg/terminal-linux-2:latest -f linux-2/Dockerfile linux-2/
-podman build -t git.torden.tech/jonasbg/terminal-linux-3:latest -f linux-3/Dockerfile linux-3/
 podman build -t git.torden.tech/jonasbg/terminal-containers:latest -f containers/Dockerfile containers/
 podman build -t git.torden.tech/jonasbg/terminal-docker:latest -f docker/Dockerfile docker/
+podman build -t git.torden.tech/jonasbg/terminal-git-signing:latest -f git-signing/Dockerfile git-signing/
+podman build -t git.torden.tech/jonasbg/terminal-supply-chain:latest -f supply-chain/Dockerfile supply-chain/
 podman build -t git.torden.tech/jonasbg/terminal-kubernetes:latest -f kubernetes/Dockerfile kubernetes/
 podman build -t git.torden.tech/jonasbg/terminal-kubernetes-cilium:latest -f kubernetes-cilium/Dockerfile .
 ```

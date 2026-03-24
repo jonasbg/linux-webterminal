@@ -9,10 +9,10 @@ services:
       context: ./linux-2
     image: ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest
 
-  linux-3:
+  git-signing:
     build:
-      context: ./linux-3
-    image: ghcr.io/jonasbg/linux-webterminal/terminal-linux-3:latest
+      context: ./git-signing
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-git-signing:latest
 
   containers:
     build:
@@ -34,3 +34,8 @@ services:
     build:
       context: ./docker
     image: ghcr.io/jonasbg/linux-webterminal/terminal-docker:latest
+
+  supply-chain:
+    build:
+      context: ./supply-chain
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-supply-chain:latest

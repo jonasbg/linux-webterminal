@@ -28,23 +28,29 @@ COURSES = {
         'long_description': 'Solve a command-line murder mystery using grep, cat, head, and other basic Linux commands. Learn to navigate the filesystem, search through files, and piece together clues - all from the terminal.',
         'image': 'git.torden.tech/jonasbg/terminal-linux-1:latest',
         'profile': 'strict',
+        'group': 'Linux',
+        'order': 10,
         'guides': ['/home/termuser/instructions', '/home/termuser/cheatsheet.md'],
     },
     'linux-2': {
         'title': 'Linux II',
-        'description': 'Git signing - learn GPG/SSH commit signing and verification.',
-        'long_description': 'Work with a real git repository to understand commit signing. Learn how GPG and SSH keys are used to verify code authenticity, inspect signed commits, and configure your own signing setup.',
-        'image': 'git.torden.tech/jonasbg/terminal-linux-2:latest',
-        'profile': 'strict',
-        'guides': ['/home/termuser/warmup.md', '/home/termuser/instructions.md', '/home/termuser/cheatsheet.md'],
-    },
-    'linux-3': {
-        'title': 'Linux III',
         'description': 'Process investigation - explore /proc, PIDs, file descriptors, and namespaces.',
         'long_description': 'Dive into the /proc virtual filesystem to understand how Linux manages processes. Inspect PIDs, environment variables, file descriptors, memory maps, and learn how PID namespaces provide container isolation.',
-        'image': 'git.torden.tech/jonasbg/terminal-linux-3:latest',
+        'image': 'git.torden.tech/jonasbg/terminal-linux-2:latest',
         'profile': 'strict',
+        'group': 'Linux',
+        'order': 20,
         'guides': ['/home/termuser/instruction.md'],
+    },
+    'git-signing': {
+        'title': 'Git Signing',
+        'description': 'Git signing - learn GPG/SSH commit signing and verification.',
+        'long_description': 'Work with a real git repository to understand commit signing. Learn how GPG and SSH keys are used to verify code authenticity, inspect signed commits, and configure your own signing setup.',
+        'image': 'git.torden.tech/jonasbg/terminal-git-signing:latest',
+        'profile': 'strict',
+        'group': 'DevOps',
+        'order': 50,
+        'guides': ['/home/termuser/warmup.md', '/home/termuser/instructions.md', '/home/termuser/cheatsheet.md'],
     },
     'containers': {
         'title': 'Container Fundamentals',
@@ -52,6 +58,8 @@ COURSES = {
         'long_description': 'Understand what a container really is - just a Linux process with namespaces and cgroups. Experience resource limits firsthand by hitting PID limits, memory caps, and CPU throttling. Learn the runtime stack from runc to containerd to Podman.',
         'image': 'git.torden.tech/jonasbg/terminal-containers:latest',
         'profile': 'strict',
+        'group': 'Containers',
+        'order': 30,
         'guides': ['/home/termuser/instruction.md'],
     },
     'docker': {
@@ -60,7 +68,19 @@ COURSES = {
         'long_description': 'Hands-on workshop covering container best practices. Build multi-stage Dockerfiles, compare image sizes across Alpine/Ubuntu/Scratch, scan for vulnerabilities with Trivy, lint with Hadolint, and learn security hardening techniques.',
         'image': 'git.torden.tech/jonasbg/terminal-docker:latest',
         'profile': 'relaxed',
+        'group': 'Containers',
+        'order': 40,
         'guides': ['/home/termuser/instructions.md'],
+    },
+    'supply-chain': {
+        'title': 'Supply Chain',
+        'description': 'Scan images, inspect SBOMs, compare digests, and apply simple CI/CD security gates.',
+        'long_description': 'Learn how software supply chain trust works in practice. Build example images, scan them with Trivy, inspect image digests, generate SBOMs, and apply a simple release policy the same way a CI pipeline would.',
+        'image': 'git.torden.tech/jonasbg/terminal-supply-chain:latest',
+        'profile': 'relaxed',
+        'group': 'DevOps',
+        'order': 60,
+        'guides': ['/home/termuser/instruction.md'],
     },
     'kubernetes': {
         'title': 'Kubernetes Basics',
@@ -68,6 +88,8 @@ COURSES = {
         'long_description': 'Use the real kubectl binary against a mock Kubernetes API server with pre-populated cluster data. Explore namespaces, pods, deployments, statefulsets, services, configmaps, secrets, and ArgoCD applications. Edit resources, read logs, and understand that Kubernetes is just an API with a database.',
         'image': 'git.torden.tech/jonasbg/terminal-kubernetes:latest',
         'profile': 'strict',
+        'group': 'Kubernetes',
+        'order': 70,
         'pids_limit': 64,
         'mem_limit': '128m',
         'guides': ['/home/termuser/instruction.md'],
@@ -78,11 +100,28 @@ COURSES = {
         'long_description': 'Use the real kubectl binary against a mock Kubernetes API server focused on networking concepts. Explore Talos nodes, kubelet details, Cilium as a DaemonSet, Pod IPs, Services, NetworkPolicy, Gateway API resources, and see Pods get recreated with new IPs when scaled or deleted.',
         'image': 'git.torden.tech/jonasbg/terminal-kubernetes-cilium:latest',
         'profile': 'strict',
+        'group': 'Kubernetes',
+        'order': 80,
         'pids_limit': 64,
         'mem_limit': '128m',
         'guides': ['/home/termuser/instruction.md'],
     },
 }
+
+def canonical_course_slug(slug):
+    return slug
+
+
+def course_config(slug):
+    canonical = canonical_course_slug(slug)
+    return canonical, COURSES.get(canonical)
+
+
+def course_source_dir(slug):
+    canonical, config = course_config(slug)
+    if not config:
+        return canonical
+    return config.get('source_dir', canonical)
 
 
 # Create Flask app and wrap with app context
@@ -468,16 +507,17 @@ class TTYController:
 
         try:
             # Resolve image and security profile from course config
-            course_config = COURSES.get(course, {}) if course else {}
-            profile = course_config.get('profile', 'strict')
-            image = course_config.get('image') or os.environ.get(
+            _, config = course_config(course)
+            resolved_course = config or {}
+            profile = resolved_course.get('profile', 'strict')
+            image = resolved_course.get('image') or os.environ.get(
                 'CONTAINER_IMAGE', 'git.torden.tech/jonasbg/terminal-linux-1:latest')
 
             overrides = {}
-            if course_config.get('pids_limit'):
-                overrides['pids_limit'] = course_config['pids_limit']
-            if course_config.get('mem_limit'):
-                overrides['mem_limit'] = course_config['mem_limit']
+            if resolved_course.get('pids_limit'):
+                overrides['pids_limit'] = resolved_course['pids_limit']
+            if resolved_course.get('mem_limit'):
+                overrides['mem_limit'] = resolved_course['mem_limit']
 
             logger.info("Starting container with image: %s (profile: %s)", image, profile)
 
@@ -1149,16 +1189,20 @@ def api_courses():
             'description': config['description'],
             'long_description': config.get('long_description', config['description']),
             'profile': config['profile'],
+            'group': config.get('group', 'Other'),
+            'order': config.get('order', 999),
             'has_guide': bool(config.get('guides')),
         })
+    courses_list.sort(key=lambda c: (c['order'], c['title']))
     return jsonify(courses_list)
 
 
 @app.route('/api/courses/<slug>/readme')
 def api_course_readme(slug):
-    if slug not in COURSES:
+    canonical, config = course_config(slug)
+    if not config:
         return jsonify({'error': 'Not found'}), 404
-    readme_path = os.path.join('courses', slug, 'README.md')
+    readme_path = os.path.join('courses', course_source_dir(canonical), 'README.md')
     if not os.path.isfile(readme_path):
         return jsonify({'error': 'No README'}), 404
     with open(readme_path, 'r') as f:
@@ -1187,16 +1231,16 @@ _guide_cache = {}
 
 @app.route('/api/courses/<slug>/files')
 def api_course_files(slug):
-    if slug not in COURSES:
+    canonical, config = course_config(slug)
+    if not config:
         return jsonify([]), 404
-    config = COURSES[slug]
     guide_paths = config.get('guides', [])
     if not guide_paths:
         return jsonify([])
 
     # Return cached if available
-    if slug in _guide_cache:
-        return jsonify(_guide_cache[slug])
+    if canonical in _guide_cache:
+        return jsonify(_guide_cache[canonical])
 
     # Extract files from the container image
     image = config['image']
@@ -1213,15 +1257,16 @@ def api_course_files(slug):
         except Exception as e:
             logger.error("Error extracting %s from %s: %s", path, image, e)
 
-    _guide_cache[slug] = files
+    _guide_cache[canonical] = files
     return jsonify(files)
 
 
 @app.route('/api/courses/<slug>/images/<path:filename>')
 def api_course_image(slug, filename):
-    if slug not in COURSES:
+    canonical, config = course_config(slug)
+    if not config:
         return 'Not found', 404
-    return send_from_directory(os.path.join('courses', slug, 'images'), filename)
+    return send_from_directory(os.path.join('courses', course_source_dir(canonical), 'images'), filename)
 
 
 @socketio.on('connect')
@@ -1238,7 +1283,7 @@ def handle_connect():
 def handle_start_session(data):
     ws_id = data['id']
     user_id = request.sid
-    course = data.get('course')  # Optional course slug from client
+    course = canonical_course_slug(data.get('course'))  # Optional course slug from client
     try:
         container_id = tty_controller.create_session(ws_id, user_id, request, course=course)
         logger.info(

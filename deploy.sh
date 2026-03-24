@@ -2,7 +2,7 @@
 set -e
 
 REPO_DIR="${HOME}/repo"
-COURSES="linux-1 linux-2 linux-3 containers docker kubernetes kubernetes-cilium"
+COURSES="linux-1 linux-2 containers docker git-signing supply-chain kubernetes kubernetes-cilium"
 
 echo "=== Pulling latest ==="
 podman run --rm -v "${REPO_DIR}:/repo:Z" docker.io/alpine/git -C /repo pull

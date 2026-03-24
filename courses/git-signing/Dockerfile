@@ -2,6 +2,8 @@ FROM alpine:latest
 
 # System dependencies (minimal set)
 RUN apk add --no-cache \
+    git \
+    openssh \
     ncurses \
     ncurses-terminfo \
     ncurses-terminfo-base
@@ -14,8 +16,8 @@ RUN addgroup -g 1000 termuser && \
 RUN mkdir -p /usr/local/bin
 
 # Copy allowed executables and secure system binary locations
-# ps, sleep, kill, readlink needed for process investigation; tr for /proc parsing
-RUN for cmd in sh sed stty cat cd cp echo grep head id less ls cut sleep pwd rm tail tr readlink ps kill vi tput clear wc which printenv env; do \
+# git, ssh-keygen needed for signing exercises; base64 for decoding secrets
+RUN for cmd in sh sed stty cat cd cp echo grep git ssh-keygen head id less ls base64 cut sleep mkdir mv pwd rm tail touch vi tput clear wc which printenv env; do \
         if [ -f "/bin/$cmd" ]; then \
             cp "/bin/$cmd" "/usr/local/bin/"; \
         elif [ -f "/usr/bin/$cmd" ]; then \
@@ -28,10 +30,16 @@ RUN cp /bin/busybox /usr/local/bin/busybox
 COPY cat-wrapper /usr/local/bin/cat
 RUN chmod +x /usr/local/bin/cat
 
-# Set up lab environment: process investigation task
-COPY instructions.md /tmp/instruction.md
-RUN mv /tmp/instruction.md /home/termuser/instruction.md && \
-    chown termuser:termuser /home/termuser/instruction.md
+# Set up lab environment: git signing repo
+RUN git clone https://github.com/jonasbg/linux-git-signing-repo /home/termuser/signing-project && \
+    mv /home/termuser/signing-project/instructions.md /home/termuser/instructions.md && \
+    mv /home/termuser/signing-project/cheatsheet.md /home/termuser/cheatsheet.md && \
+    chown -R termuser:termuser /home/termuser
+
+# Add warmup exercise (impersonation demo)
+COPY warmup.md /tmp/warmup.md
+RUN mv /tmp/warmup.md /home/termuser/warmup.md && \
+    chown termuser:termuser /home/termuser/warmup.md
 
 # Configure shell environment
 COPY --chown=root:root <<-'EOF' /home/termuser/.profile
@@ -42,7 +50,7 @@ export PATH=/usr/local/bin 2>/dev/null
 PS1='\n\033[1;34m$(pwd | sed "s|^$HOME/|~/|; s|^$HOME$||" 2>/dev/null)\033[0m\n\033[1;32m❯\033[0m '
 
 # Additional color settings for terminal commands
-export LS_COLORS='di=1;34:ln=1;36:so=1;35:pi=1;33:ex=1;32:bd=1;33:cd=1;33:su=1;31:sg=1;31:tw=1:ow=1;34'
+export LS_COLORS='di=1;34:ln=1;36:so=1;35:pi=1;33:ex=1;32:bd=1;33:cd=1;33:su=1;31:sg=1;31:tw=1;34:ow=1;34'
 
 # Enable color support
 alias ls='/usr/local/bin/ls --color=auto'

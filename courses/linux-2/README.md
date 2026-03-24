@@ -1,32 +1,26 @@
 ---
 difficulty: Intermediate
-duration: 45-60 min
-tags: [git, gpg, ssh, security, signing]
+duration: 60-90 min
+tags: [linux, proc, processes, namespaces, debugging]
 ---
 
-# Linux II - Git Commit Signing
+# Linux III - Process Investigation
 
-Learn how to verify that code really comes from who it claims to.
+Look under the hood of a running Linux system through `/proc`.
 
 ## What you'll learn
 
-- The git author email is just a string - **anyone can set it to anything**. It is not proof of identity.
-- How GPG and SSH keys provide real cryptographic proof that a commit was made by a specific person
-- Inspect signed vs unsigned commits in a real repository
-- Understand the `allowed_signers` file and trust model
-- Configure git to sign your own commits
-- Why commit signing matters for supply chain security
+- How Linux represents every process as files in `/proc`
+- Inspect PIDs, command lines, environment variables, and memory maps
+- Understand parent-child process relationships
+- Work with file descriptors - the foundation of pipes and redirection
+- Discover how PID namespaces provide container isolation
+- Spot secrets leaked through environment variables
 
-## Why this matters
+## The exercises
 
-Run `git config user.email "ceo@company.com"` and your next commit looks like it came from the CEO. Git does not verify the author field - it trusts whatever you type. Without commit signing, there is no way to distinguish a legitimate commit from an impersonated one.
-
-Signed commits solve this by attaching a cryptographic signature that can only be produced by someone holding the private key.
-
-## The setup
-
-Start with `cat warmup.md` - a quick exercise where you impersonate Linus Torvalds in a git commit and see how easy it is. Then move on to `instructions.md` for the main investigation: a real git repository in `signing-project/` with a mix of signed and unsigned commits, some of which may not be from who they claim. The `cheatsheet.md` has all the commands you'll need.
+Follow `instruction.md` through 7 guided parts. You'll create processes, inspect them through `/proc`, and understand how Linux manages everything from memory to process trees.
 
 ## Who is this for?
 
-Developers who use git daily but haven't set up commit signing yet. You should be comfortable with basic git commands (`log`, `show`, `diff`).
+Anyone who wants to understand what's really happening when you run a command. Useful for developers debugging applications, ops people investigating issues, or anyone preparing for container/cloud work.
