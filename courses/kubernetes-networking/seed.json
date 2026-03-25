@@ -1,0 +1,834 @@
+{
+  "resources": [
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "default",
+        "uid": "cilium-1001",
+        "creationTimestamp": "2026-03-20T09:00:00Z",
+        "resourceVersion": "1001"
+      },
+      "status": {
+        "phase": "Active"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "kube-system",
+        "uid": "cilium-1002",
+        "creationTimestamp": "2026-03-20T09:00:00Z",
+        "resourceVersion": "1002"
+      },
+      "status": {
+        "phase": "Active"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "production",
+        "uid": "cilium-1003",
+        "creationTimestamp": "2026-03-20T09:00:00Z",
+        "resourceVersion": "1003"
+      },
+      "status": {
+        "phase": "Active"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Node",
+      "metadata": {
+        "name": "control-plane",
+        "uid": "cilium-1101",
+        "creationTimestamp": "2025-10-03T09:00:00Z",
+        "resourceVersion": "1101",
+        "labels": {
+          "kubernetes.io/hostname": "control-plane",
+          "kubernetes.io/os": "linux",
+          "kubernetes.io/arch": "arm64",
+          "node.kubernetes.io/instance-type": "talos",
+          "node-role.kubernetes.io/control-plane": ""
+        }
+      },
+      "spec": {
+        "podCIDR": "10.244.0.0/24",
+        "taints": [
+          {
+            "key": "node-role.kubernetes.io/control-plane",
+            "effect": "NoSchedule"
+          }
+        ]
+      },
+      "status": {
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True",
+            "reason": "KubeletReady",
+            "message": "kubelet is posting ready status"
+          }
+        ],
+        "addresses": [
+          {
+            "type": "InternalIP",
+            "address": "192.168.1.10"
+          },
+          {
+            "type": "Hostname",
+            "address": "control-plane"
+          }
+        ],
+        "nodeInfo": {
+          "kernelVersion": "6.6.54-talos",
+          "osImage": "Talos (v1.8.1)",
+          "containerRuntimeVersion": "containerd://2.0.0",
+          "kubeletVersion": "v1.34.0",
+          "kubeProxyVersion": "v1.34.0",
+          "operatingSystem": "linux",
+          "architecture": "arm64"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Node",
+      "metadata": {
+        "name": "worker-1",
+        "uid": "cilium-1102",
+        "creationTimestamp": "2025-10-03T09:00:00Z",
+        "resourceVersion": "1102",
+        "labels": {
+          "kubernetes.io/hostname": "worker-1",
+          "kubernetes.io/os": "linux",
+          "kubernetes.io/arch": "arm64",
+          "node.kubernetes.io/instance-type": "talos"
+        }
+      },
+      "spec": {
+        "podCIDR": "10.244.1.0/24"
+      },
+      "status": {
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True",
+            "reason": "KubeletReady",
+            "message": "kubelet is posting ready status"
+          }
+        ],
+        "addresses": [
+          {
+            "type": "InternalIP",
+            "address": "192.168.1.11"
+          },
+          {
+            "type": "Hostname",
+            "address": "worker-1"
+          }
+        ],
+        "nodeInfo": {
+          "kernelVersion": "6.6.54-talos",
+          "osImage": "Talos (v1.8.1)",
+          "containerRuntimeVersion": "containerd://2.0.0",
+          "kubeletVersion": "v1.34.0",
+          "kubeProxyVersion": "v1.34.0",
+          "operatingSystem": "linux",
+          "architecture": "arm64"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Node",
+      "metadata": {
+        "name": "worker-2",
+        "uid": "cilium-1103",
+        "creationTimestamp": "2026-02-08T09:00:00Z",
+        "resourceVersion": "1103",
+        "labels": {
+          "kubernetes.io/hostname": "worker-2",
+          "kubernetes.io/os": "linux",
+          "kubernetes.io/arch": "arm64",
+          "node.kubernetes.io/instance-type": "talos"
+        }
+      },
+      "spec": {
+        "podCIDR": "10.244.2.0/24"
+      },
+      "status": {
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True",
+            "reason": "KubeletReady",
+            "message": "kubelet is posting ready status"
+          }
+        ],
+        "addresses": [
+          {
+            "type": "InternalIP",
+            "address": "192.168.1.12"
+          },
+          {
+            "type": "Hostname",
+            "address": "worker-2"
+          }
+        ],
+        "nodeInfo": {
+          "kernelVersion": "6.6.54-talos",
+          "osImage": "Talos (v1.8.1)",
+          "containerRuntimeVersion": "containerd://2.0.0",
+          "kubeletVersion": "v1.34.0",
+          "kubeProxyVersion": "v1.34.0",
+          "operatingSystem": "linux",
+          "architecture": "arm64"
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "DaemonSet",
+      "metadata": {
+        "name": "cilium",
+        "namespace": "kube-system",
+        "uid": "cilium-1201",
+        "creationTimestamp": "2026-03-20T09:05:00Z",
+        "resourceVersion": "1201"
+      },
+      "spec": {
+        "selector": {
+          "matchLabels": {
+            "k8s-app": "cilium"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "k8s-app": "cilium"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "cilium-agent",
+                "image": "quay.io/cilium/cilium:v1.17.2"
+              }
+            ]
+          }
+        }
+      },
+      "status": {
+        "desiredNumberScheduled": 3,
+        "currentNumberScheduled": 3,
+        "numberReady": 3
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "cilium-control-plane",
+        "namespace": "kube-system",
+        "uid": "cilium-1202",
+        "creationTimestamp": "2026-03-20T09:10:00Z",
+        "resourceVersion": "1202",
+        "labels": {
+          "k8s-app": "cilium"
+        }
+      },
+      "spec": {
+        "nodeName": "control-plane",
+        "containers": [
+          {
+            "name": "cilium-agent",
+            "image": "quay.io/cilium/cilium:v1.17.2"
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.0.3",
+        "hostIP": "192.168.1.10",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "cilium-agent",
+            "ready": true,
+            "restartCount": 0,
+            "image": "quay.io/cilium/cilium:v1.17.2"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "cilium-worker-1",
+        "namespace": "kube-system",
+        "uid": "cilium-1203",
+        "creationTimestamp": "2026-03-20T09:10:00Z",
+        "resourceVersion": "1203",
+        "labels": {
+          "k8s-app": "cilium"
+        }
+      },
+      "spec": {
+        "nodeName": "worker-1",
+        "containers": [
+          {
+            "name": "cilium-agent",
+            "image": "quay.io/cilium/cilium:v1.17.2"
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.1.3",
+        "hostIP": "192.168.1.11",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "cilium-agent",
+            "ready": true,
+            "restartCount": 0,
+            "image": "quay.io/cilium/cilium:v1.17.2"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "cilium-worker-2",
+        "namespace": "kube-system",
+        "uid": "cilium-1204",
+        "creationTimestamp": "2026-03-20T09:10:00Z",
+        "resourceVersion": "1204",
+        "labels": {
+          "k8s-app": "cilium"
+        }
+      },
+      "spec": {
+        "nodeName": "worker-2",
+        "containers": [
+          {
+            "name": "cilium-agent",
+            "image": "quay.io/cilium/cilium:v1.17.2"
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.2.3",
+        "hostIP": "192.168.1.12",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "cilium-agent",
+            "ready": true,
+            "restartCount": 0,
+            "image": "quay.io/cilium/cilium:v1.17.2"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "coredns-5dd5756b68-xk9r2",
+        "namespace": "kube-system",
+        "uid": "cilium-1205",
+        "creationTimestamp": "2026-03-20T09:10:00Z",
+        "resourceVersion": "1205",
+        "labels": {
+          "k8s-app": "kube-dns",
+          "pod-template-hash": "5dd5756b68"
+        }
+      },
+      "spec": {
+        "nodeName": "control-plane",
+        "containers": [
+          {
+            "name": "coredns",
+            "image": "registry.k8s.io/coredns/coredns:v1.11.1"
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.0.2",
+        "hostIP": "192.168.1.10",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "coredns",
+            "ready": true,
+            "restartCount": 0,
+            "image": "registry.k8s.io/coredns/coredns:v1.11.1"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "shared-net-demo",
+        "namespace": "default",
+        "uid": "cilium-1301",
+        "creationTimestamp": "2026-03-21T11:00:00Z",
+        "resourceVersion": "1301",
+        "labels": {
+          "app": "shared-net-demo"
+        }
+      },
+      "spec": {
+        "nodeName": "worker-1",
+        "containers": [
+          {
+            "name": "app",
+            "image": "busybox:1.36"
+          },
+          {
+            "name": "metrics",
+            "image": "busybox:1.36"
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.1.40",
+        "hostIP": "192.168.1.11",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "app",
+            "ready": true,
+            "restartCount": 0,
+            "image": "busybox:1.36"
+          },
+          {
+            "name": "metrics",
+            "ready": true,
+            "restartCount": 0,
+            "image": "busybox:1.36"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "web",
+        "namespace": "production",
+        "uid": "cilium-1401",
+        "creationTimestamp": "2026-03-21T09:00:00Z",
+        "resourceVersion": "1401",
+        "labels": {
+          "app": "web"
+        }
+      },
+      "spec": {
+        "replicas": 2,
+        "selector": {
+          "matchLabels": {
+            "app": "web"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "web",
+              "tier": "frontend",
+              "pod-template-hash": "7c8d9f6d5b"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "web",
+                "image": "ghcr.io/example/web:v1",
+                "ports": [
+                  {
+                    "containerPort": 8080
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "status": {
+        "replicas": 2,
+        "readyReplicas": 2,
+        "availableReplicas": 2,
+        "updatedReplicas": 2
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "ReplicaSet",
+      "metadata": {
+        "name": "web-7c8d9f6d5b",
+        "namespace": "production",
+        "uid": "cilium-1402",
+        "creationTimestamp": "2026-03-21T09:00:00Z",
+        "resourceVersion": "1402",
+        "labels": {
+          "app": "web",
+          "pod-template-hash": "7c8d9f6d5b"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "name": "web"
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 2,
+        "selector": {
+          "matchLabels": {
+            "app": "web",
+            "pod-template-hash": "7c8d9f6d5b"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "web",
+              "tier": "frontend",
+              "pod-template-hash": "7c8d9f6d5b"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "web",
+                "image": "ghcr.io/example/web:v1",
+                "ports": [
+                  {
+                    "containerPort": 8080
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "status": {
+        "replicas": 2,
+        "readyReplicas": 2,
+        "availableReplicas": 2
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "web-7c8d9f6d5b-r4f6c",
+        "namespace": "production",
+        "uid": "cilium-1403",
+        "creationTimestamp": "2026-03-21T09:05:00Z",
+        "resourceVersion": "1403",
+        "labels": {
+          "app": "web",
+          "tier": "frontend",
+          "pod-template-hash": "7c8d9f6d5b"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "web-7c8d9f6d5b"
+          }
+        ]
+      },
+      "spec": {
+        "nodeName": "worker-1",
+        "containers": [
+          {
+            "name": "web",
+            "image": "ghcr.io/example/web:v1",
+            "ports": [
+              {
+                "containerPort": 8080
+              }
+            ]
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.1.20",
+        "hostIP": "192.168.1.11",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "web",
+            "ready": true,
+            "restartCount": 0,
+            "image": "ghcr.io/example/web:v1"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "web-7c8d9f6d5b-z8h2m",
+        "namespace": "production",
+        "uid": "cilium-1404",
+        "creationTimestamp": "2026-03-21T09:06:00Z",
+        "resourceVersion": "1404",
+        "labels": {
+          "app": "web",
+          "tier": "frontend",
+          "pod-template-hash": "7c8d9f6d5b"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "web-7c8d9f6d5b"
+          }
+        ]
+      },
+      "spec": {
+        "nodeName": "worker-2",
+        "containers": [
+          {
+            "name": "web",
+            "image": "ghcr.io/example/web:v1",
+            "ports": [
+              {
+                "containerPort": 8080
+              }
+            ]
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "podIP": "10.244.2.20",
+        "hostIP": "192.168.1.12",
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "web",
+            "ready": true,
+            "restartCount": 0,
+            "image": "ghcr.io/example/web:v1"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "web",
+        "namespace": "production",
+        "uid": "cilium-1405",
+        "creationTimestamp": "2026-03-21T09:00:00Z",
+        "resourceVersion": "1405"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "clusterIP": "10.96.200.50",
+        "ports": [
+          {
+            "port": 80,
+            "targetPort": 8080,
+            "protocol": "TCP"
+          }
+        ],
+        "selector": {
+          "app": "web"
+        }
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "default-deny",
+        "namespace": "production",
+        "uid": "cilium-1406",
+        "creationTimestamp": "2026-03-21T09:10:00Z",
+        "resourceVersion": "1406"
+      },
+      "spec": {
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "allow-gateway-to-web",
+        "namespace": "production",
+        "uid": "cilium-1407",
+        "creationTimestamp": "2026-03-21T09:11:00Z",
+        "resourceVersion": "1407"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "web"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "production"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 8080
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "gateway.networking.k8s.io/v1",
+      "kind": "Gateway",
+      "metadata": {
+        "name": "edge",
+        "namespace": "production",
+        "uid": "cilium-1408",
+        "creationTimestamp": "2026-03-21T09:15:00Z",
+        "resourceVersion": "1408"
+      },
+      "spec": {
+        "gatewayClassName": "cilium",
+        "listeners": [
+          {
+            "name": "http",
+            "protocol": "HTTP",
+            "port": 80
+          }
+        ]
+      },
+      "status": {
+        "addresses": [
+          {
+            "type": "IPAddress",
+            "value": "203.0.113.10"
+          }
+        ],
+        "conditions": [
+          {
+            "type": "Programmed",
+            "status": "True"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "gateway.networking.k8s.io/v1",
+      "kind": "HTTPRoute",
+      "metadata": {
+        "name": "web",
+        "namespace": "production",
+        "uid": "cilium-1409",
+        "creationTimestamp": "2026-03-21T09:16:00Z",
+        "resourceVersion": "1409"
+      },
+      "spec": {
+        "parentRefs": [
+          {
+            "name": "edge"
+          }
+        ],
+        "hostnames": [
+          "web.demo.internal"
+        ],
+        "rules": [
+          {
+            "matches": [
+              {
+                "path": {
+                  "type": "PathPrefix",
+                  "value": "/"
+                }
+              }
+            ],
+            "backendRefs": [
+              {
+                "name": "web",
+                "port": 80
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "logs": {
+    "kube-system/cilium-worker-1": "level=info msg=\"Cilium agent running\" node=worker-1\nlevel=info msg=\"BPF datapath initialized\" node=worker-1\n",
+    "production/web-7c8d9f6d5b-r4f6c": "GET / 200 1ms\nGET /healthz 200 0ms\n",
+    "production/web-7c8d9f6d5b-z8h2m": "GET / 200 2ms\nGET /readyz 200 0ms\n"
+  }
+}

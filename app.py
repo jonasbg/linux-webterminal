@@ -1,6 +1,8 @@
 import eventlet
 eventlet.monkey_patch()
 # Eventlet monkey patch must come first
+import eventlet
+eventlet.monkey_patch()
 
 import sys
 import signal
@@ -15,8 +17,113 @@ import os
 import docker
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify, send_from_directory
 
+
+# Course definitions: maps slug -> container configuration
+# SecurityProfile "strict" = locked down (no network, read-only, caps dropped)
+# SecurityProfile "builder" = writable with network and resource limits for in-container podman
+COURSES = {
+    'linux-1': {
+        'title': 'Linux I',
+        'description': 'Introduction to Linux command line - file navigation, basic commands, and the clmystery challenge.',
+        'long_description': 'Solve a command-line murder mystery using grep, cat, head, and other basic Linux commands. Learn to navigate the filesystem, search through files, and piece together clues - all from the terminal.',
+        'image': 'git.torden.tech/jonasbg/terminal-linux-1:latest',
+        'profile': 'strict',
+        'group': 'Linux',
+        'order': 10,
+        'guides': ['/home/termuser/instructions', '/home/termuser/cheatsheet.md'],
+    },
+    'linux-2': {
+        'title': 'Linux II',
+        'description': 'Process investigation - explore /proc, PIDs, file descriptors, and namespaces.',
+        'long_description': 'Dive into the /proc virtual filesystem to understand how Linux manages processes. Inspect PIDs, environment variables, file descriptors, memory maps, and learn how PID namespaces provide container isolation.',
+        'image': 'git.torden.tech/jonasbg/terminal-linux-2:latest',
+        'profile': 'strict',
+        'group': 'Linux',
+        'order': 20,
+        'guides': ['/home/termuser/instruction.md'],
+    },
+    'git-signing': {
+        'title': 'Git Signing',
+        'description': 'Git signing - learn GPG/SSH commit signing and verification.',
+        'long_description': 'Work with a real git repository to understand commit signing. Learn how GPG and SSH keys are used to verify code authenticity, inspect signed commits, and configure your own signing setup.',
+        'image': 'git.torden.tech/jonasbg/terminal-git-signing:latest',
+        'profile': 'strict',
+        'group': 'DevOps',
+        'order': 50,
+        'guides': ['/home/termuser/warmup.md', '/home/termuser/instructions.md', '/home/termuser/cheatsheet.md'],
+    },
+    'containers': {
+        'title': 'Container Fundamentals',
+        'description': 'How containers work under the hood - namespaces, cgroups, and the runtime stack.',
+        'long_description': 'Understand what a container really is - just a Linux process with namespaces and cgroups. Experience resource limits firsthand by hitting PID limits, memory caps, and CPU throttling. Learn the runtime stack from runc to containerd to Podman.',
+        'image': 'git.torden.tech/jonasbg/terminal-containers:latest',
+        'profile': 'strict',
+        'group': 'Containers',
+        'order': 30,
+        'guides': ['/home/termuser/instruction.md'],
+    },
+    'docker': {
+        'title': 'Docker Workshop',
+        'description': 'Build small, secure and immutable containers. Multi-stage builds, Trivy scanning, and Hadolint.',
+        'long_description': 'Hands-on workshop covering container best practices. Build multi-stage Dockerfiles, compare image sizes across Alpine/Ubuntu/Scratch, scan for vulnerabilities with Trivy, lint with Hadolint, and learn security hardening techniques.',
+        'image': 'git.torden.tech/jonasbg/terminal-docker:latest',
+        'profile': 'builder',
+        'group': 'Containers',
+        'order': 40,
+        'guides': ['/home/termuser/instructions.md'],
+    },
+    'supply-chain': {
+        'title': 'Supply Chain',
+        'description': 'Scan images, inspect SBOMs, compare digests, and apply simple CI/CD security gates.',
+        'long_description': 'Learn how software supply chain trust works in practice. Build example images, scan them with Trivy, inspect image digests, generate SBOMs, and apply a simple release policy the same way a CI pipeline would.',
+        'image': 'git.torden.tech/jonasbg/terminal-supply-chain:latest',
+        'profile': 'builder',
+        'group': 'DevOps',
+        'order': 60,
+        'guides': ['/home/termuser/instruction.md'],
+    },
+    'kubernetes': {
+        'title': 'Kubernetes Basics',
+        'description': 'Navigate a cluster with the real kubectl binary against a mock API server.',
+        'long_description': 'Use the real kubectl binary against a mock Kubernetes API server with pre-populated cluster data. Explore namespaces, pods, deployments, statefulsets, services, configmaps, secrets, and ArgoCD applications. Edit resources, read logs, and understand that Kubernetes is just an API with a database.',
+        'image': 'git.torden.tech/jonasbg/terminal-kubernetes:latest',
+        'profile': 'strict',
+        'group': 'Kubernetes',
+        'order': 70,
+        'pids_limit': 64,
+        'mem_limit': '128m',
+        'guides': ['/home/termuser/instruction.md'],
+    },
+    'kubernetes-networking': {
+        'title': 'Kubernetes Networking',
+        'description': 'Inspect Pods, Services, Gateway API, and NetworkPolicy with Cilium as the dataplane.',
+        'long_description': 'Use the real kubectl binary against a mock Kubernetes API server focused on networking concepts. Explore Talos nodes, kubelet details, Cilium as a DaemonSet, Pod IPs, Services, NetworkPolicy, Gateway API resources, and see Pods get recreated with new IPs when scaled or deleted.',
+        'image': 'git.torden.tech/jonasbg/terminal-kubernetes-networking:latest',
+        'profile': 'strict',
+        'group': 'Kubernetes',
+        'order': 80,
+        'pids_limit': 64,
+        'mem_limit': '128m',
+        'guides': ['/home/termuser/instruction.md'],
+    },
+}
+
+def canonical_course_slug(slug):
+    return slug
+
+
+def course_config(slug):
+    canonical = canonical_course_slug(slug)
+    return canonical, COURSES.get(canonical)
+
+
+def course_source_dir(slug):
+    canonical, config = course_config(slug)
+    if not config:
+        return canonical
+    return config.get('source_dir', canonical)
 
 
 # Create Flask app and wrap with app context
@@ -134,6 +241,7 @@ class TTYLogger:
         clean_terminal_output(text, command=None):
             Cleans terminal output by removing control sequences and formatting.
     """
+
     def __init__(self):
         self.enabled = os.environ.get(
             'TTY_LOGGING_ENABLED', 'false').lower() == 'true'
@@ -257,7 +365,6 @@ class TTYController:
 
     Methods:
         create_session(ws_id, user_id, request): Creates a new container session
-        create_session_with_shells(ws_id, user_id, request): Creates a session with shell support
         create_shell(ws_id, tab_id, user_id, request): Creates a new shell in existing session
         write_to_container(ws_id, data): Writes data to container
         read_from_container(ws_id): Reads data from container
@@ -275,6 +382,7 @@ class TTYController:
         output = controller.read_from_container("ws1")
         controller.cleanup_session("ws1")
     """
+
     def __init__(self):
         self.client = self._get_docker_client()
         self.sessions = {}
@@ -311,15 +419,93 @@ class TTYController:
         except Exception as e:
             logger.error("Error listing containers for cleanup: %s", e)
 
-    def create_session(self, ws_id, user_id, request=None):
-        with self.lock:
-            logger.info(
-                "Creating new session for user %s (ws_id: %s)", user_id, ws_id)
+    def _get_container_kwargs(self, profile, ws_id, user_id, image, overrides=None):
+        """Build container run kwargs based on security profile."""
+        base_kwargs = {
+            'detach': True,
+            'tty': True,
+            'stdin_open': True,
+            'remove': True,
+            'labels': {
+                'app': 'web-terminal',
+                'ws_id': ws_id,
+                'user_id': user_id,
+                'io.containers.autoupdate': 'image',
+            },
+            'environment': {
+                "TERM": "xterm",
+                "PS1": "\\w \\$ ",
+                "HOME": "/home/termuser",
+                "PATH": "/usr/local/bin",
+            },
+        }
 
-            # Check if we've hit the container limit
+        if profile == 'builder':
+            # Narrower builder profile for podman-based workshop images.
+            # Privileged mode is still required for nested container builds here,
+            # but we keep resource limits and avoid host user namespace sharing.
+            base_kwargs.update({
+                'user': '0:0',
+                'network': 'bridge',
+                'privileged': True,
+                'read_only': False,
+                'cpu_period': 100000,
+                'cpu_quota': 50000,
+                'cpu_shares': 512,
+                'pids_limit': 128,
+                'mem_limit': '768m',
+                'tmpfs': {
+                    "/run": "rw,nosuid,nodev,exec,mode=755",
+                    "/var/lib/containers": "rw,nosuid,nodev,exec,mode=755",
+                    "/tmp": "size=256m,rw,nosuid,nodev",
+                    "/home": "size=128m,rw,exec,nosuid,nodev",
+                },
+            })
+        else:
+            # Strict config for Linux I/II and default
+            base_kwargs.update({
+                'user': '1000:1000',
+                'network': 'none',
+                'cap_drop': ['ALL'],
+                'security_opt': [
+                    'no-new-privileges:true',
+                    "mask=/proc/cpuinfo", "mask=/proc/meminfo",
+                    "mask=/proc/diskstats", "mask=/proc/modules",
+                    "mask=/proc/kallsyms", "mask=/proc/keys",
+                    "mask=/proc/drivers", "mask=/proc/net",
+                    "mask=/proc/asound", "mask=/proc/key-users",
+                    "mask=/proc/slabinfo", "mask=/proc/uptime",
+                    "mask=/proc/stat", "mask=/proc/zoneinfo",
+                    "mask=/proc/vmallocinfo", "mask=/proc/mounts",
+                    "mask=/proc/kpageflags", "mask=/proc/kpagecount",
+                    "mask=/proc/kpagecgroup", "mask=/proc/scsi",
+                    "mask=/proc/buddyinfo", "mask=/proc/pagetypeinfo",
+                    "mask=/proc/ioports", "mask=/proc/iomem",
+                    "mask=/proc/interrupts", "mask=/proc/softirqs",
+                    "mask=/proc/dma",
+                ],
+                'cpu_period': 100000,
+                'cpu_quota': 10000,
+                'cpu_shares': 128,
+                'pids_limit': 10,
+                'mem_limit': '64m',
+                'read_only': True,
+                'tmpfs': {
+                    '/tmp': 'size=64m,noexec,nosuid',
+                    '/home': 'size=64m,exec',
+                },
+            })
+
+        # Apply per-course overrides
+        if overrides:
+            base_kwargs.update(overrides)
+
+        return base_kwargs
+
+    def create_session(self, ws_id, user_id, request=None, course=None):
+        # Check limits and clean up old session under lock
+        with self.lock:
             if len(self.sessions) >= self.max_containers:
-                logger.warning(
-                    "Maximum container limit (%d) reached", self.max_containers)
                 raise Exception("Maximum number of containers reached")
 
             if user_id in self.user_sessions:
@@ -328,111 +514,48 @@ class TTYController:
                     "User %s has existing session %s, cleaning up", user_id, old_ws_id)
                 self.cleanup_session(old_ws_id)
 
-            try:
-                image = os.environ.get(
-                    'CONTAINER_IMAGE', 'ghcr.io/jonasbg/linux-webterminal/terminal-base:latest')
-                logger.info("Starting container with image: %s", image)
-                container = self.client.containers.run(
-                    image,
-                    detach=True,
-                    tty=True,
-                    stdin_open=True,
-                    remove=True,
-                    user='1000:1000',
-                    labels={
-                        'app': 'web-terminal',
-                        'ws_id': ws_id,
-                        'user_id': user_id,
-                        'io.containers.autoupdate': 'image'
-                    },
-                    security_opt=[
-                        'no-new-privileges:true',
-                        "mask=/proc/cpuinfo",
-                        "mask=/proc/meminfo",
-                        "mask=/proc/diskstats",
-                        "mask=/proc/modules",
-                        "mask=/proc/kallsyms",
-                        "mask=/proc/keys",
-                        "mask=/proc/drivers",
-                        "mask=/proc/net",
-                        "mask=/proc/asound",
-                        "mask=/proc/key-users",
-                        "mask=/proc/slabinfo",
-                        "mask=/proc/uptime",
-                        "mask=/proc/stat",
-                        "mask=/proc/zoneinfo",
-                        "mask=/proc/vmallocinfo",
-                        "mask=/proc/mounts",
-                        "mask=/proc/kpageflags",
-                        "mask=/proc/kpagecount",
-                        "mask=/proc/kpagecgroup",
-                        "mask=/proc/scsi",
-                        "mask=/proc/buddyinfo",
-                        "mask=/proc/pagetypeinfo",
-                        "mask=/proc/ioports",
-                        "mask=/proc/iomem",
-                        "mask=/proc/interrupts",
-                        "mask=/proc/softirqs",
-                        "mask=/proc/dma",
-                        "mask=/proc/uptime"
-                    ],
-                    cap_drop=['ALL'],
-                    network="none",
-                    mem_limit='64m',
-                    cpu_period=100000,  # Default CPU CFS period (microseconds)
-                    cpu_quota=10000,    # Only allow 10% CPU usage
-                    cpu_shares=128,     # Lower CPU priority relative to other containers
-                    ulimits=[
-                        # Restrict CPU time to 10 seconds
-                        {'name': 'cpu', 'soft': 10, 'hard': 10},
-                        # Limit number of processes even more
-                        {'name': 'nproc', 'soft': 20, 'hard': 20}
-                    ],
-                    pids_limit=10,
-                    read_only=True,
-                    tmpfs={
-                        '/tmp': 'size=64m,noexec,nosuid',
-                        '/home': 'size=64m,exec'
-                    },
-                    environment={
-                        "TERM": "xterm",
-                        "PS1": "\\w \\$ ",
-                        "HOME": "/home/termuser",
-                        "PATH": "/usr/local/bin",
-                    }
-                )
+        try:
+            # Resolve image and security profile from course config
+            _, config = course_config(course)
+            resolved_course = config or {}
+            profile = resolved_course.get('profile', 'strict')
+            image = resolved_course.get('image') or os.environ.get(
+                'CONTAINER_IMAGE', 'git.torden.tech/jonasbg/terminal-linux-1:latest')
 
-                # First set the terminal size
-                stty_exec = self.client.api.exec_create(
-                    container.id,
-                    'stty cols 142',
-                    stdin=True,
-                    tty=True
-                )
-                self.client.api.exec_start(stty_exec['Id'])
+            overrides = {}
+            if resolved_course.get('pids_limit'):
+                overrides['pids_limit'] = resolved_course['pids_limit']
+            if resolved_course.get('mem_limit'):
+                overrides['mem_limit'] = resolved_course['mem_limit']
 
-                # Then start the shell
-                exec_create = self.client.api.exec_create(
-                    container.id,
-                    '/usr/local/bin/sh -l',
-                    stdin=True,
-                    tty=True
-                )
+            logger.info("Starting container with image: %s (profile: %s)", image, profile)
 
-                exec_socket = self.client.api.exec_start(
-                    exec_create['Id'],
-                    socket=True,
-                    tty=True
-                )
+            kwargs = self._get_container_kwargs(profile, ws_id, user_id, image, overrides)
+            container = self.client.containers.run(image, **kwargs)
 
-                # Pass request object to logger
-                log_file = self.logger.create_session_log(
-                    container.id,
-                    user_id,
-                    ws_id,
-                    request
-                )
+            # Start the shell (client sends resize after container_ready)
+            exec_create = self.client.api.exec_create(
+                container.id,
+                '/usr/local/bin/sh -l',
+                stdin=True,
+                tty=True
+            )
 
+            exec_socket = self.client.api.exec_start(
+                exec_create['Id'],
+                socket=True,
+                tty=True
+            )
+
+            log_file = self.logger.create_session_log(
+                container.id,
+                user_id,
+                ws_id,
+                request
+            )
+
+            # Only hold lock for dict mutations
+            with self.lock:
                 self.sessions[ws_id] = {
                     'container': container,
                     'exec_id': exec_create['Id'],
@@ -441,26 +564,27 @@ class TTYController:
                     'log_file': log_file,
                     'current_command': '',
                     'buffer': '',
-                    'command_complete': False
+                    'command_complete': False,
+                    'main_shell_alive': True
                 }
                 self.user_sessions[user_id] = ws_id
 
-                def cleanup_after_lifetime():
-                    eventlet.sleep(self.container_lifetime)
-                    self.cleanup_session(ws_id)
+            def cleanup_after_lifetime():
+                eventlet.sleep(self.container_lifetime)
+                self.cleanup_session(ws_id)
 
-                eventlet.spawn_n(cleanup_after_lifetime)
+            eventlet.spawn_n(cleanup_after_lifetime)
 
-                logger.info(
-                    "Container %s created successfully for user %s", container.id[:12], user_id)
-                return container.id
+            logger.info(
+                "Container %s created for user %s", container.id[:12], user_id)
+            return container.id
 
-            except Exception as e:
-                logger.error(
-                    "Failed to create container for user %s: %s", user_id, e)
-                if ws_id in self.sessions:
-                    self.cleanup_session(ws_id)
-                raise
+        except Exception as e:
+            logger.error(
+                "Failed to create container for user %s: %s", user_id, e)
+            if ws_id in self.sessions:
+                self.cleanup_session(ws_id)
+            raise
 
     def write_to_container(self, ws_id, data):
         if ws_id not in self.sessions:
@@ -515,7 +639,7 @@ class TTYController:
 
             data = socket._sock.recv(4096)
             if not data:
-                return None
+                raise EOFError("Shell exited")
 
             output = data.decode('utf-8', errors='replace')
 
@@ -533,6 +657,8 @@ class TTYController:
             self._check_command_timeout(ws_id, session)
 
             return output
+        except (EOFError, BrokenPipeError, ConnectionResetError, OSError):
+            raise  # Let connection errors propagate to break the read loop
         except Exception as e:
             logger.error("Error reading from container: %s", e)
             return None
@@ -600,7 +726,8 @@ class TTYController:
                             "Removed user session mapping for %s", user_id)
 
                 except Exception as e:
-                    logger.error("Error in cleanup for session %s: %s", ws_id, e)
+                    logger.error(
+                        "Error in cleanup for session %s: %s", ws_id, e)
                 finally:
                     del self.sessions[ws_id]
                     logger.info("Session %s cleanup completed", ws_id)
@@ -634,7 +761,8 @@ class TTYController:
                     "Exec resize failed (this is normal for some container runtimes): %s", e)
 
         except Exception as e:
-            logger.error("Error resizing terminal for session %s: %s", ws_id, e)
+            logger.error(
+                "Error resizing terminal for session %s: %s", ws_id, e)
             raise
 
     def _get_docker_client(self):
@@ -661,61 +789,43 @@ class TTYController:
 
     def create_shell(self, ws_id, tab_id, user_id, request=None):
         """Create a new shell in an existing container session"""
+        # Read session state under lock, then release before Docker API calls
         with self.lock:
-            logger.info(
-                "Creating new shell for session %s (tab: %s, user: %s)", ws_id, tab_id, user_id)
-
             if ws_id not in self.sessions:
-                logger.error("Session %s not found", ws_id)
                 raise Exception(f"Session not found: {ws_id}")
-
             session = self.sessions[ws_id]
             container = session.get('container')
-
             if not container:
-                logger.error("Container not found in session %s", ws_id)
                 raise Exception("Container not found in session")
 
-            try:
-                # First set the terminal size
-                stty_exec = self.client.api.exec_create(
-                    container.id,
-                    'stty cols 142',
-                    stdin=True,
-                    tty=True
-                )
-                self.client.api.exec_start(stty_exec['Id'])
+        try:
+            # Create a new shell process (client sends resize after)
+            exec_create = self.client.api.exec_create(
+                container.id,
+                '/usr/local/bin/sh -l',
+                stdin=True,
+                tty=True
+            )
 
-                # Create a new shell process
-                exec_create = self.client.api.exec_create(
-                    container.id,
-                    '/usr/local/bin/sh -l',
-                    stdin=True,
-                    tty=True
-                )
+            exec_socket = self.client.api.exec_start(
+                exec_create['Id'],
+                socket=True,
+                tty=True
+            )
 
-                exec_socket = self.client.api.exec_start(
-                    exec_create['Id'],
-                    socket=True,
-                    tty=True
-                )
+            shell_id = f"shell-{uuid.uuid4()}"
 
-                # Generate a unique shell ID
-                shell_id = f"shell-{uuid.uuid4()}"
+            log_file = self.logger.create_session_log(
+                container.id,
+                user_id,
+                shell_id,
+                request
+            )
 
-                # Create log file for the shell
-                log_file = self.logger.create_session_log(
-                    container.id,
-                    user_id,
-                    shell_id,
-                    request
-                )
-
-                # If session doesn't have a shells dictionary, create one
+            # Only hold lock for the dict mutation
+            with self.lock:
                 if 'shells' not in session:
                     session['shells'] = {}
-
-                # Add the new shell to the session
                 session['shells'][shell_id] = {
                     'exec_id': exec_create['Id'],
                     'socket': exec_socket,
@@ -726,14 +836,14 @@ class TTYController:
                     'command_complete': False
                 }
 
-                logger.info(
-                    "Shell %s created successfully for session %s", shell_id, ws_id)
-                return shell_id
+            logger.info(
+                "Shell %s created for session %s", shell_id, ws_id)
+            return shell_id
 
-            except Exception as e:
-                logger.error(
-                    "Failed to create shell for session %s: %s", ws_id, e)
-                raise
+        except Exception as e:
+            logger.error(
+                "Failed to create shell for session %s: %s", ws_id, e)
+            raise
 
     def _check_shell_command_timeout(self, ws_id, shell_id, shell):
         """Check if a command in a shell has timed out and should be finalized"""
@@ -795,6 +905,16 @@ class TTYController:
             logger.error("Error resizing shell %s: %s", shell_id, e)
             raise
 
+    def is_session_dead(self, ws_id):
+        """Check if all shells (main + additional) in a session have exited"""
+        if ws_id not in self.sessions:
+            return True
+        session = self.sessions[ws_id]
+        if session.get('main_shell_alive'):
+            return False
+        shells = session.get('shells', {})
+        return len(shells) == 0
+
     def close_shell(self, ws_id, shell_id):
         """Close a specific shell in a session"""
         with self.lock:
@@ -829,7 +949,7 @@ class TTYController:
                         shell['socket']._sock.close()
                         logger.debug("Closed socket for shell %s", shell_id)
                     except Exception as e:
-                        logger.error(
+                        logger.debug(
                             "Error closing socket for shell %s: %s", shell_id, e)
 
                 # If we have exec_id, try to forcefully terminate if possible
@@ -853,129 +973,6 @@ class TTYController:
 
             except Exception as e:
                 logger.error("Error closing shell %s: %s", shell_id, e)
-    # Modified version of create_session to support shells
-
-    def create_session_with_shells(self, ws_id, user_id, request=None):
-        """Create a new session with support for multiple shells"""
-        with self.lock:
-            logger.info(
-                "Creating new session for user %s (ws_id: %s)", user_id, ws_id)
-
-            # Check if we've hit the container limit
-            if len(self.sessions) >= self.max_containers:
-                logger.warning(
-                    "Maximum container limit (%d) reached", self.max_containers)
-                raise Exception("Maximum number of containers reached")
-
-            if user_id in self.user_sessions:
-                old_ws_id = self.user_sessions[user_id]
-                logger.info(
-                    "User %s has existing session %s, cleaning up", user_id, old_ws_id)
-                self.cleanup_session(old_ws_id)
-
-            try:
-                image = os.environ.get(
-                    'CONTAINER_IMAGE', 'ghcr.io/jonasbg/linux-webterminal/terminal-base:latest')
-                logger.info("Starting container with image: %s", image)
-                container = self.client.containers.run(
-                    image,
-                    detach=True,
-                    tty=True,
-                    stdin_open=True,
-                    remove=True,
-                    user='1000:1000',
-                    labels={
-                        'app': 'web-terminal',
-                        'ws_id': ws_id,
-                        'user_id': user_id,
-                        'io.containers.autoupdate': 'image'
-                    },
-                    security_opt=[
-                        'no-new-privileges:true',
-                        "mask=/proc/cpuinfo",
-                        "mask=/proc/meminfo",
-                        "mask=/proc/diskstats",
-                        "mask=/proc/modules",
-                        "mask=/proc/kallsyms",
-                        "mask=/proc/keys",
-                        "mask=/proc/drivers",
-                        "mask=/proc/net",
-                        "mask=/proc/asound",
-                        "mask=/proc/key-users",
-                        "mask=/proc/slabinfo",
-                        "mask=/proc/uptime",
-                        "mask=/proc/stat",
-                        "mask=/proc/zoneinfo",
-                        "mask=/proc/vmallocinfo",
-                        "mask=/proc/mounts",
-                        "mask=/proc/kpageflags",
-                        "mask=/proc/kpagecount",
-                        "mask=/proc/kpagecgroup",
-                        "mask=/proc/scsi",
-                        "mask=/proc/buddyinfo",
-                        "mask=/proc/pagetypeinfo",
-                        "mask=/proc/ioports",
-                        "mask=/proc/iomem",
-                        "mask=/proc/interrupts",
-                        "mask=/proc/softirqs",
-                        "mask=/proc/dma",
-                        "mask=/proc/uptime"
-                    ],
-                    cap_drop=['ALL'],
-                    network="none",
-                    mem_limit='64m',
-                    cpu_period=100000,
-                    cpu_quota=10000,
-                    cpu_shares=128,
-                    ulimits=[
-                        {'name': 'cpu', 'soft': 10, 'hard': 10},
-                        {'name': 'nproc', 'soft': 20, 'hard': 20}
-                    ],
-                    pids_limit=10,
-                    read_only=True,
-                    tmpfs={
-                        '/tmp': 'size=64m,noexec,nosuid',
-                        '/home': 'size=64m,exec'
-                    },
-                    environment={
-                        "TERM": "xterm",
-                        "PS1": "\\w \\$ ",
-                        "HOME": "/home/termuser",
-                        "PATH": "/usr/local/bin",
-                    }
-                )
-
-                # Initialize the session with container and user info
-                self.sessions[ws_id] = {
-                    'container': container,
-                    'user_id': user_id,
-                    'shells': {}
-                }
-                self.user_sessions[user_id] = ws_id
-
-                # Create the main shell for this container
-                shell_id = self.create_shell(
-                    ws_id, 'initial', user_id, request)
-
-                # Store the main shell ID
-                self.sessions[ws_id]['main_shell_id'] = shell_id
-
-                def cleanup_after_lifetime():
-                    eventlet.sleep(self.container_lifetime)
-                    self.cleanup_session(ws_id)
-
-                eventlet.spawn_n(cleanup_after_lifetime)
-
-                logger.info(
-                    "Container %s created successfully for user %s", container.id[:12], user_id)
-                return container.id, shell_id
-
-            except Exception as e:
-                logger.error(
-                    "Failed to create container for user %s: %s", user_id, e)
-                if ws_id in self.sessions:
-                    self.cleanup_session(ws_id)
-                raise
 
     # Modified cleanup_session to handle shells
     def cleanup_session_with_shells(self, ws_id):
@@ -1017,7 +1014,8 @@ class TTYController:
                             "Removed user session mapping for %s", user_id)
 
                 except Exception as e:
-                    logger.error("Error in cleanup for session %s: %s", ws_id, e)
+                    logger.error(
+                        "Error in cleanup for session %s: %s", ws_id, e)
                 finally:
                     del self.sessions[ws_id]
                     logger.info("Session %s cleanup completed", ws_id)
@@ -1089,7 +1087,7 @@ class TTYController:
 
             data = socket._sock.recv(4096)
             if not data:
-                return None
+                raise EOFError("Shell exited")
 
             output = data.decode('utf-8', errors='replace')
 
@@ -1107,6 +1105,8 @@ class TTYController:
             self._check_shell_command_timeout(ws_id, shell_id, shell)
 
             return output
+        except (EOFError, BrokenPipeError, ConnectionResetError, OSError):
+            raise  # Let connection errors propagate to break the read loop
         except Exception as e:
             logger.error("Error reading from shell %s: %s", shell_id, e)
             return None
@@ -1180,7 +1180,102 @@ def cleanup_all_containers(signum, frame):
 
 @app.route('/')
 def index():
+    return render_template('index.html')
+
+
+@app.route('/terminal')
+def terminal():
     return render_template('terminal.html')
+
+
+@app.route('/api/courses')
+def api_courses():
+    courses_list = []
+    for slug, config in COURSES.items():
+            courses_list.append({
+            'slug': slug,
+            'title': config['title'],
+            'description': config['description'],
+            'long_description': config.get('long_description', config['description']),
+            'profile': config['profile'],
+            'group': config.get('group', 'Other'),
+            'order': config.get('order', 999),
+            'has_guide': bool(config.get('guides')),
+        })
+    courses_list.sort(key=lambda c: (c['order'], c['title']))
+    return jsonify(courses_list)
+
+
+@app.route('/api/courses/<slug>/readme')
+def api_course_readme(slug):
+    canonical, config = course_config(slug)
+    if not config:
+        return jsonify({'error': 'Not found'}), 404
+    readme_path = os.path.join('courses', course_source_dir(canonical), 'README.md')
+    if not os.path.isfile(readme_path):
+        return jsonify({'error': 'No README'}), 404
+    with open(readme_path, 'r') as f:
+        content = f.read()
+    # Parse YAML frontmatter
+    meta = {}
+    body = content
+    if content.startswith('---'):
+        parts = content.split('---', 2)
+        if len(parts) >= 3:
+            body = parts[2].strip()
+            for line in parts[1].strip().split('\n'):
+                if ':' in line:
+                    key, val = line.split(':', 1)
+                    val = val.strip()
+                    # Parse arrays like [a, b, c]
+                    if val.startswith('[') and val.endswith(']'):
+                        val = [v.strip() for v in val[1:-1].split(',')]
+                    meta[key.strip()] = val
+    return jsonify({'meta': meta, 'body': body})
+
+
+# Cache for guide files extracted from container images
+_guide_cache = {}
+
+
+@app.route('/api/courses/<slug>/files')
+def api_course_files(slug):
+    canonical, config = course_config(slug)
+    if not config:
+        return jsonify([]), 404
+    guide_paths = config.get('guides', [])
+    if not guide_paths:
+        return jsonify([])
+
+    # Return cached if available
+    if canonical in _guide_cache:
+        return jsonify(_guide_cache[canonical])
+
+    # Extract files from the container image
+    image = config['image']
+    files = []
+    for path in guide_paths:
+        try:
+            result = tty_controller.client.containers.run(
+                image, f'/usr/local/bin/busybox cat {path}',
+                remove=True, stdout=True, stderr=False
+            )
+            content = result.decode('utf-8', errors='replace')
+            name = os.path.basename(path)
+            files.append({'name': name, 'content': content})
+        except Exception as e:
+            logger.error("Error extracting %s from %s: %s", path, image, e)
+
+    _guide_cache[canonical] = files
+    return jsonify(files)
+
+
+@app.route('/api/courses/<slug>/images/<path:filename>')
+def api_course_image(slug, filename):
+    canonical, config = course_config(slug)
+    if not config:
+        return 'Not found', 404
+    return send_from_directory(os.path.join('courses', course_source_dir(canonical), 'images'), filename)
 
 
 @socketio.on('connect')
@@ -1197,9 +1292,9 @@ def handle_connect():
 def handle_start_session(data):
     ws_id = data['id']
     user_id = request.sid
+    course = canonical_course_slug(data.get('course'))  # Optional course slug from client
     try:
-        # Use the original create_session to maintain compatibility
-        container_id = tty_controller.create_session(ws_id, user_id, request)
+        container_id = tty_controller.create_session(ws_id, user_id, request, course=course)
         logger.info(
             "Created container %s for session %s (user: %s)", container_id, ws_id, user_id)
 
@@ -1210,13 +1305,19 @@ def handle_start_session(data):
                     try:
                         output = tty_controller.read_from_container(ws_id)
                         if output:
-                            # Emit as both the traditional way and the new shell way
                             socketio.emit(
                                 'output', {'output': output}, room=user_id)
                     except Exception as e:
-                        logger.error("Error in read loop: %s", e)
+                        logger.info("Main shell exited for session %s: %s", ws_id, e)
                         break
                     socketio.sleep(0.05)
+                # Mark main shell as dead
+                if ws_id in tty_controller.sessions:
+                    tty_controller.sessions[ws_id]['main_shell_alive'] = False
+                if tty_controller.is_session_dead(ws_id):
+                    socketio.emit('session_ended', {}, room=user_id)
+                else:
+                    socketio.emit('main_shell_exited', {}, room=user_id)
 
         socketio.start_background_task(read_output, ws_id, user_id)
 
@@ -1254,9 +1355,19 @@ def handle_create_shell(data):
                                 'output': output
                             }, room=user_id)
                     except Exception as e:
-                        logger.error("Error in shell read loop: %s", e)
+                        logger.info("Shell %s exited: %s", shell_id, e)
                         break
                     socketio.sleep(0.05)
+                # Remove shell from session
+                if ws_id in tty_controller.sessions:
+                    session = tty_controller.sessions[ws_id]
+                    shells = session.get('shells', {})
+                    shells.pop(shell_id, None)
+                socketio.emit('shell_exited', {
+                    'shellId': shell_id
+                }, room=user_id)
+                if tty_controller.is_session_dead(ws_id):
+                    socketio.emit('session_ended', {}, room=user_id)
 
         socketio.start_background_task(
             read_shell_output, containerId, shell_id, user_id)
@@ -1292,6 +1403,9 @@ def handle_resize_shell(data):
     if not containerId or not shell_id:
         return
 
+    if containerId not in tty_controller.sessions:
+        return
+
     try:
         tty_controller.resize_shell(containerId, shell_id, cols, rows)
     except Exception as e:
@@ -1323,6 +1437,9 @@ def handle_input(data):
     if not ws_id or not user_input:
         return
 
+    if ws_id not in tty_controller.sessions:
+        return
+
     try:
         tty_controller.write_to_container(ws_id, user_input)
     except Exception as e:
@@ -1337,6 +1454,9 @@ def handle_resize(data):
     rows = data.get('rows', 24)
 
     if not ws_id:
+        return
+
+    if ws_id not in tty_controller.sessions:
         return
 
     try:
@@ -1361,7 +1481,7 @@ signal.signal(signal.SIGTERM, cleanup_all_containers)
 
 if __name__ == '__main__':
     try:
-        port = int(os.environ.get('PORT', 5000))
+        port = int(os.environ.get('PORT', 8080))
         app.logger.info("Server starting on port %d", port)
 
         socketio.run(

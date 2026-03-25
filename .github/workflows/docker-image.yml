@@ -7,9 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build-and-push:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -18,19 +16,23 @@ jobs:
     - name: Log in to GitHub Container Registry
       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
-    # Build and push the base (client) image
-    - name: Build and push base (client) OCI image
-      run: |
-        BASE_IMAGE="ghcr.io/${{ github.repository }}/terminal-base"
-        BASE_TAG="latest"
-        docker build . -f Dockerfile.base -t $BASE_IMAGE:$BASE_TAG
-        docker push $BASE_IMAGE:$BASE_TAG
-
     # Build and push the server image (depends on the base image)
     - name: Build and push server image
       run: |
         SERVER_IMAGE="ghcr.io/${{ github.repository }}/terminal-server"
         SERVER_TAG="latest"
-        cd src/
-        docker build . -f Dockerfile -t $SERVER_IMAGE:$SERVER_TAG
-        docker push $SERVER_IMAGE:$SERVER_TAG
+        docker build . -f Dockerfile -t "$SERVER_IMAGE:$SERVER_TAG"
+        docker push "$SERVER_IMAGE:$SERVER_TAG"
+
+    # Build and push all course images
+    - name: Build and push course images
+      run: |
+        for course in linux-1 linux-2 containers docker git-signing supply-chain kubernetes kubernetes-networking; do
+          IMAGE="ghcr.io/${{ github.repository }}/terminal-${course}:latest"
+          if [ "$course" = "kubernetes-networking" ]; then
+            docker build courses/ -f "courses/${course}/Dockerfile" -t "$IMAGE"
+          else
+            docker build "courses/${course}/" -f "courses/${course}/Dockerfile" -t "$IMAGE"
+          fi
+          docker push "$IMAGE"
+        done

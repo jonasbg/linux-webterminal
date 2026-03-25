@@ -1,0 +1,41 @@
+services:
+  linux-1:
+    build:
+      context: ./linux-1
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-linux-1:latest
+
+  linux-2:
+    build:
+      context: ./linux-2
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-linux-2:latest
+
+  git-signing:
+    build:
+      context: ./git-signing
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-git-signing:latest
+
+  containers:
+    build:
+      context: ./containers
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-containers:latest
+
+  kubernetes:
+    build:
+      context: ./kubernetes
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-kubernetes:latest
+
+  kubernetes-networking:
+    build:
+      context: .
+      dockerfile: ./kubernetes-networking/Dockerfile
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-kubernetes-networking:latest
+
+  docker:
+    build:
+      context: ./docker
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-docker:latest
+
+  supply-chain:
+    build:
+      context: ./supply-chain
+    image: ghcr.io/jonasbg/linux-webterminal/terminal-supply-chain:latest

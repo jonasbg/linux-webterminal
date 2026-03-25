@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevSecOps Lab - Hands-on Terminal Environments</title>
+    <link rel="icon" type="image/x-icon" href="/static/img/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-touch-icon.png">
+    <meta property="og:title" content="DevSecOps Lab" />
+    <meta property="og:description"
+        content="Hands-on Linux, containers, Docker, and Kubernetes - right in your browser. Each task spins up its own sandboxed terminal environment." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://nhn.one" />
+    <meta property="og:image" content="https://nhn.one/static/img/og_image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="DevSecOps Lab" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="DevSecOps Lab" />
+    <meta name="twitter:description"
+        content="Hands-on Linux, containers, Docker, and Kubernetes - right in your browser." />
+    <meta name="twitter:image" content="https://nhn.one/static/img/og_image.png" />
+    <meta name="description"
+        content="Hands-on Linux, containers, Docker, and Kubernetes - right in your browser. Each task spins up its own sandboxed terminal environment." />
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+        integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --card-hover: #222;
+            --text-color: #e0e0e0;
+            --text-muted: #888;
+            --primary: #4a9eff;
+            --primary-hover: #357abd;
+            --green: #22c55e;
+            --orange: #f59e0b;
+            --border: #333;
+            --font-ui: 'Inter', system-ui, sans-serif;
+            --font-mono: 'Ubuntu Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-ui);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            width: 100%;
+            padding: 2rem 2rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header h1 i {
+            color: var(--primary);
+            margin-right: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .courses {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        .course-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .course-card {
+            cursor: pointer;
+        }
+
+        .course-card:hover {
+            background: var(--card-hover);
+            border-color: var(--primary);
+        }
+
+        .course-card .icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .course-card h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .course-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            flex: 1;
+            margin-bottom: 1rem;
+        }
+
+        .course-card .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-strict {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--green);
+        }
+
+        .badge-relaxed {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--orange);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.65rem 0.75rem;
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-color);
+        }
+
+        /* Dialog */
+        .dialog-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dialog-overlay.open {
+            display: flex;
+        }
+
+        .dialog {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .dialog-header {
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .dialog-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .dialog-header .icon {
+            font-size: 1.5rem;
+        }
+
+        .dialog-header h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .dialog-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .dialog-close:hover {
+            color: var(--text-color);
+        }
+
+        .dialog-inner {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .dialog-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .dialog-body .loading {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .dialog-sidebar {
+            width: 200px;
+            flex-shrink: 0;
+            padding: 1.5rem;
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .dialog-sidebar .badge {
+            display: inline-block;
+        }
+
+        .dialog-sidebar .meta {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .dialog-sidebar .meta i {
+            width: 1rem;
+            text-align: center;
+            margin-right: 0.25rem;
+        }
+
+        .dialog-sidebar .start-area {
+            margin-top: auto;
+        }
+
+        .dialog-sidebar .btn-primary {
+            width: 100%;
+        }
+
+        .dialog-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.75rem;
+        }
+
+        .tag {
+            background: rgba(74, 158, 255, 0.1);
+            color: var(--primary);
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+        }
+
+        /* Markdown content styling */
+        .md-content h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 0 0 1rem;
+            color: var(--primary);
+        }
+
+        .md-content h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.5rem;
+            color: var(--text-color);
+        }
+
+        .md-content h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 1rem 0 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .md-content p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0 0 0.75rem;
+        }
+
+        .md-content ul,
+        .md-content ol {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0 0 0.75rem;
+            padding-left: 1.5rem;
+        }
+
+        .md-content li {
+            margin-bottom: 0.25rem;
+        }
+
+        .md-content code {
+            background: rgba(74, 158, 255, 0.1);
+            color: var(--primary);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        .md-content pre {
+            background: #111;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin: 0 0 0.75rem;
+            overflow-x: auto;
+        }
+
+        .md-content pre code {
+            background: none;
+            color: var(--green);
+            padding: 0;
+        }
+
+        .md-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .md-content th,
+        .md-content td {
+            border: 1px solid var(--border);
+            padding: 0.4rem 0.6rem;
+            text-align: left;
+        }
+
+        .md-content th {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .md-content td {
+            color: var(--text-muted);
+        }
+
+        .md-content strong {
+            color: var(--text-color);
+        }
+
+        .md-content hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 1rem 0;
+        }
+
+        .md-content img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+        }
+
+        .footer {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            .courses {
+                grid-template-columns: 1fr;
+                padding: 0 1rem 1rem;
+            }
+
+            .header {
+                padding: 1.5rem 1rem 1rem;
+            }
+
+            .dialog {
+                width: 95%;
+                max-height: 90vh;
+            }
+
+            .dialog-inner {
+                flex-direction: column;
+            }
+
+            .dialog-sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border);
+                flex-direction: row;
+                align-items: center;
+            }
+
+            .dialog-sidebar .start-area {
+                margin-top: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1><i class="fa-solid fa-terminal"></i> DevSecOps Lab</h1>
+        <p>Choose a task to get started. Each task spins up its own sandboxed environment.</p>
+    </div>
+
+    <div class="courses" id="courses"></div>
+
+    <div class="dialog-overlay" id="dialog-overlay">
+        <div class="dialog">
+            <div class="dialog-header">
+                <div class="dialog-header-left">
+                    <div class="icon" id="dialog-icon"></div>
+                    <h2 id="dialog-title"></h2>
+                </div>
+                <button class="dialog-close" onclick="closeDialog()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="dialog-inner">
+                <div class="dialog-body">
+                    <div id="dialog-content" class="md-content">
+                        <p class="loading">Loading...</p>
+                    </div>
+                </div>
+                <div class="dialog-sidebar">
+                    <div>
+                        <div class="meta" id="dialog-meta"></div>
+                    </div>
+                    <div class="start-area">
+                        <a class="btn btn-primary" id="dialog-start" href="#">
+                            <i class="fa-solid fa-play"></i> Start
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Sessions reset when you leave. Everything is logged.
+    </div>
+
+    <script>
+        const ICONS = {
+            'linux-1': 'fa-brands fa-linux',
+            'linux-2': 'fa-brands fa-linux',
+            'git-signing': 'fa-brands fa-git-alt',
+            'containers': 'fa-solid fa-cubes',
+            'kubernetes': 'fa-solid fa-dharmachakra',
+            'kubernetes-networking': 'fa-solid fa-dharmachakra',
+            'supply-chain': 'fa-solid fa-shield-halved',
+            'docker': 'fa-brands fa-docker',
+        };
+
+        // Cache fetched READMEs
+        const readmeCache = {};
+
+        function openDialog(course) {
+            const icon = ICONS[course.slug] || 'fa-solid fa-terminal';
+
+            document.getElementById('dialog-icon').innerHTML = `<i class="${icon}"></i>`;
+            document.getElementById('dialog-title').textContent = course.title;
+            document.getElementById('dialog-meta').innerHTML =
+                `<p><i class="fa-solid fa-clock"></i> Resets on exit</p>`;
+            const guideParam = course.has_guide ? '&guide=1' : '';
+            document.getElementById('dialog-start').href = `/terminal?course=${course.slug}${guideParam}`;
+            document.getElementById('dialog-overlay').classList.add('open');
+
+            const contentEl = document.getElementById('dialog-content');
+
+            if (readmeCache[course.slug]) {
+                contentEl.innerHTML = readmeCache[course.slug].html;
+                renderMeta(readmeCache[course.slug].meta, course);
+                return;
+            }
+
+            contentEl.innerHTML = '<p class="loading">Loading...</p>';
+            fetch(`/api/courses/${course.slug}/readme`)
+                .then(r => {
+                    if (!r.ok) throw new Error('No README');
+                    return r.json();
+                })
+                .then(data => {
+                    const html = marked.parse(data.body);
+                    readmeCache[course.slug] = { html, meta: data.meta };
+                    contentEl.innerHTML = html;
+                    renderMeta(data.meta, course);
+                })
+                .catch(() => {
+                    contentEl.innerHTML = `<p>${course.long_description || course.description}</p>`;
+                });
+        }
+
+        function renderMeta(meta, course) {
+            const metaEl = document.getElementById('dialog-meta');
+            let html = '';
+            if (meta.difficulty) {
+                html += `<p><i class="fa-solid fa-signal"></i> ${meta.difficulty}</p>`;
+            }
+            if (meta.duration) {
+                html += `<p><i class="fa-solid fa-clock"></i> ${meta.duration}</p>`;
+            }
+            if (meta.tags && Array.isArray(meta.tags)) {
+                html += '<div class="dialog-tags">' +
+                    meta.tags.map(t => `<span class="tag">${t}</span>`).join('') +
+                    '</div>';
+            }
+            metaEl.innerHTML = html;
+        }
+
+        function closeDialog() {
+            document.getElementById('dialog-overlay').classList.remove('open');
+        }
+
+        document.getElementById('dialog-overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeDialog();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeDialog();
+        });
+
+        fetch('/api/courses')
+            .then(r => r.json())
+            .then(courses => {
+                const container = document.getElementById('courses');
+                courses.forEach(c => {
+                    const icon = ICONS[c.slug] || 'fa-solid fa-terminal';
+
+                    const card = document.createElement('div');
+                    card.className = 'course-card';
+                    card.innerHTML = `
+                        <div class="icon"><i class="${icon}"></i></div>
+                        <h2>${c.title}</h2>
+                        <p>${c.description}</p>
+                        <div class="card-actions">
+                            <a href="/terminal?course=${c.slug}${c.has_guide ? '&guide=1' : ''}" class="btn btn-primary" onclick="event.stopPropagation()">
+                                <i class="fa-solid fa-play"></i> Start
+                            </a>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => openDialog(c));
+                    container.appendChild(card);
+                });
+            });
+    </script>
+</body>
+
+</html>

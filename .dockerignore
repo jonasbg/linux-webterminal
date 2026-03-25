@@ -1,5 +1,12 @@
-Dockerfile.base
-README.md
-.venv/**
-.gitignore
-logs/**
+*
+!app.py
+!requirements-lock.txt
+!templates/
+!static/
+!courses/
+courses/*.*
+courses/shared/
+courses/*/*
+!courses/*/README.md
+!courses/*/images/
+!courses/*/images/*
