@@ -21,8 +21,11 @@ jobs:
       run: |
         SERVER_IMAGE="ghcr.io/${{ github.repository }}/terminal-server"
         SERVER_TAG="latest"
+        mkdir -p dist
         docker build . -f Dockerfile -t "$SERVER_IMAGE:$SERVER_TAG"
         docker push "$SERVER_IMAGE:$SERVER_TAG"
+        SERVER_DIGEST=$(docker buildx imagetools inspect "$SERVER_IMAGE:$SERVER_TAG" --format '{{json .Manifest.Digest}}' | tr -d '"')
+        echo "$SERVER_IMAGE:$SERVER_TAG@$SERVER_DIGEST" >> dist/image-digests.txt
 
     # Build and push all course images
     - name: Build and push course images
@@ -35,4 +38,22 @@ jobs:
             docker build "courses/${course}/" -f "courses/${course}/Dockerfile" -t "$IMAGE"
           fi
           docker push "$IMAGE"
+          DIGEST=$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Manifest.Digest}}' | tr -d '"')
+          echo "$IMAGE@$DIGEST" >> dist/image-digests.txt
         done
+
+    - name: Publish image digest summary
+      run: |
+        {
+          echo "## Image digests"
+          echo
+          echo '```text'
+          cat dist/image-digests.txt
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload image digests artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: image-digests
+        path: dist/image-digests.txt

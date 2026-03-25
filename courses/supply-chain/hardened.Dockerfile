@@ -3,7 +3,7 @@ FROM python:3.12-alpine
 WORKDIR /app
 
 RUN addgroup -S app && adduser -S -G app app && \
-    pip install --no-cache-dir flask==3.0.3 requests==2.32.3
+    pip install --no-cache-dir flask==3.0.3 requests==2.32.5
 
 COPY <<'EOF' /app/app.py
 from flask import Flask
