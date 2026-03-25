@@ -113,6 +113,21 @@ export LANG=nb_NO.UTF-8
 export EDITOR=/usr/local/bin/vi
 export HOME=/home/termuser
 export LESS=-FRX
+export XDG_RUNTIME_DIR=/tmp/podman-run-1000
+mkdir -p "$XDG_RUNTIME_DIR"
+podman_socket=unix:///tmp/podman-run-1000/podman/podman.sock
+trivy() {
+    if [ ! -S /tmp/podman-run-1000/podman/podman.sock ]; then
+        mkdir -p /tmp/podman-run-1000/podman
+        podman system service --time=0 "$podman_socket" >/tmp/podman-system-service.log 2>&1 &
+        i=0
+        while [ ! -S /tmp/podman-run-1000/podman/podman.sock ] && [ "$i" -lt 5 ]; do
+            sleep 1
+            i=$((i + 1))
+        done
+    fi
+    DOCKER_HOST="$podman_socket" command trivy "$@"
+}
 
 readonly PATH
 
@@ -143,6 +158,7 @@ WORKDIR /home/termuser
 
 # Force sh to use our profile
 ENV ENV=/home/termuser/.profile \
-    SHELL=/usr/local/bin/sh
+    SHELL=/usr/local/bin/sh \
+    XDG_RUNTIME_DIR=/tmp/podman-run-1000
 
 CMD ["/usr/local/bin/sh", "-l"]

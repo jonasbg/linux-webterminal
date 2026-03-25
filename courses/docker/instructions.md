@@ -18,7 +18,7 @@ docker run --rm -i hadolint/hadolint < Dockerfile
 
 # Running trivy
 ```bash
-trivy image localhost/t
+trivy image my-alpine-image
 ```
 
 # Docker Workshop: Building Small, Secure and Immutable Containers
