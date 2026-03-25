@@ -58,6 +58,18 @@ pip install -r requirements-lock.txt
 python app.py
 ```
 
+To use locally built `localhost/...` course images during development:
+
+```bash
+./dev-build.sh
+```
+
+If you want to run the server directly instead of the container, point it at your override file:
+
+```bash
+COURSES_PATHS=./courses.yaml:./course-images.local.yaml python app.py
+```
+
 **Container:**
 
 ```bash
@@ -77,6 +89,14 @@ Note: `--security-opt label=disable` is needed on SELinux systems (Fedora, RHEL)
 ```bash
 ssh containeruser@10.10.10.168 ~/deploy.sh
 ```
+
+### Course configuration
+
+Course metadata and image references are loaded from [courses.yaml](/home/jonasbg/Source/gitea/linux-webterminal/courses.yaml) by default.
+This makes it easy to pin `image:tag@sha256:digest` refs and update course metadata without editing `app.py`.
+
+For local development you can layer one or more override files with `COURSES_PATHS`.
+Later files override earlier ones, so a small file can override only `image` fields.
 
 ## Adding course content
 

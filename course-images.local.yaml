@@ -1,0 +1,16 @@
+linux-1:
+  image: localhost/terminal-linux-1:latest
+linux-2:
+  image: localhost/terminal-linux-2:latest
+containers:
+  image: localhost/terminal-containers:latest
+docker:
+  image: localhost/terminal-docker:latest
+git-signing:
+  image: localhost/terminal-git-signing:latest
+supply-chain:
+  image: localhost/terminal-supply-chain:latest
+kubernetes:
+  image: localhost/terminal-kubernetes:latest
+kubernetes-networking:
+  image: localhost/terminal-kubernetes-networking:latest

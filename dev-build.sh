@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_IMAGE="localhost/terminal-server:latest"
 SERVER_CONTAINER="terminal-server-local"
+LOCAL_COURSE_CONFIG="${REPO_DIR}/course-images.local.yaml"
 COURSES=(
     linux-1
     linux-2
@@ -19,6 +20,9 @@ echo "=== Building server ==="
 cd "${REPO_DIR}"
 podman build -q -t "${SERVER_IMAGE}" -f Dockerfile .
 
+echo "=== Writing local course overrides ==="
+: > "${LOCAL_COURSE_CONFIG}"
+
 for course in "${COURSES[@]}"; do
     image="localhost/terminal-${course}:latest"
     remote_image="git.torden.tech/jonasbg/terminal-${course}:latest"
@@ -32,6 +36,11 @@ for course in "${COURSES[@]}"; do
 
     echo "=== Tagging ${course} ==="
     podman tag "${image}" "${remote_image}"
+
+    cat >> "${LOCAL_COURSE_CONFIG}" <<EOF
+${course}:
+  image: ${image}
+EOF
 done
 
 echo "=== Replacing local server ==="
@@ -42,8 +51,10 @@ podman run -d \
     -p 5000:5000 \
     --security-opt label=disable \
     -v "/run/user/$(id -u)/podman/podman.sock:/var/run/docker.sock" \
+    -v "${LOCAL_COURSE_CONFIG}:/app/course-images.local.yaml:ro" \
     -e TTY_LOGGING_ENABLED=true \
     -e MAX_CONTAINERS=30 \
+    -e COURSES_PATHS=/app/courses.yaml:/app/course-images.local.yaml \
     "${SERVER_IMAGE}"
 
 echo "=== Done ==="

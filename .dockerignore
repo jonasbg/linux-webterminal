@@ -1,5 +1,6 @@
 *
 !app.py
+!courses.yaml
 !requirements-lock.txt
 !templates/
 !static/
