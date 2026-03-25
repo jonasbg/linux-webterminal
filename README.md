@@ -117,11 +117,12 @@ These are internal runtime profiles used by the platform. They are not shown in 
 - 64MB memory, 10% CPU, 10 PIDs (configurable per course)
 - /proc entries masked
 
-**Relaxed** (Docker Workshop, Supply Chain):
+**Builder** (Docker Workshop, Supply Chain):
 - Bridge networking (pull images from registries)
-- Privileged mode (podman-in-podman)
 - Writable filesystem
-- No resource limits
+- Privileged mode for nested Podman builds
+- Avoids `userns_mode=host`
+- 768MB memory, 50% CPU, 256 PIDs
 
 ## Environment Variables
 

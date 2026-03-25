@@ -114,7 +114,10 @@ export EDITOR=/usr/local/bin/vi
 export HOME=/home/termuser
 export LESS=-FRX
 export XDG_RUNTIME_DIR=/tmp/podman-run-1000
+export XDG_CACHE_HOME=/tmp/.cache
+export TRIVY_CACHE_DIR=/var/lib/containers/trivy
 mkdir -p "$XDG_RUNTIME_DIR"
+mkdir -p "$XDG_CACHE_HOME" "$TRIVY_CACHE_DIR"
 podman_socket=unix:///tmp/podman-run-1000/podman/podman.sock
 trivy() {
     if [ ! -S /tmp/podman-run-1000/podman/podman.sock ]; then

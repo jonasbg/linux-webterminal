@@ -20,7 +20,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 
 # Course definitions: maps slug -> container configuration
 # SecurityProfile "strict" = locked down (no network, read-only, caps dropped)
-# SecurityProfile "relaxed" = permissive (network, writable, privileged, for podman-in-podman)
+# SecurityProfile "builder" = writable with network and resource limits for in-container podman
 COURSES = {
     'linux-1': {
         'title': 'Linux I',
@@ -67,7 +67,7 @@ COURSES = {
         'description': 'Build small, secure and immutable containers. Multi-stage builds, Trivy scanning, and Hadolint.',
         'long_description': 'Hands-on workshop covering container best practices. Build multi-stage Dockerfiles, compare image sizes across Alpine/Ubuntu/Scratch, scan for vulnerabilities with Trivy, lint with Hadolint, and learn security hardening techniques.',
         'image': 'git.torden.tech/jonasbg/terminal-docker:latest',
-        'profile': 'relaxed',
+        'profile': 'builder',
         'group': 'Containers',
         'order': 40,
         'guides': ['/home/termuser/instructions.md'],
@@ -77,7 +77,7 @@ COURSES = {
         'description': 'Scan images, inspect SBOMs, compare digests, and apply simple CI/CD security gates.',
         'long_description': 'Learn how software supply chain trust works in practice. Build example images, scan them with Trivy, inspect image digests, generate SBOMs, and apply a simple release policy the same way a CI pipeline would.',
         'image': 'git.torden.tech/jonasbg/terminal-supply-chain:latest',
-        'profile': 'relaxed',
+        'profile': 'builder',
         'group': 'DevOps',
         'order': 60,
         'guides': ['/home/termuser/instruction.md'],
@@ -438,18 +438,25 @@ class TTYController:
             },
         }
 
-        if profile == 'relaxed':
-            # Permissive config for podman-in-podman / Docker workshop
+        if profile == 'builder':
+            # Narrower builder profile for podman-based workshop images.
+            # Privileged mode is still required for nested container builds here,
+            # but we keep resource limits and avoid host user namespace sharing.
             base_kwargs.update({
                 'user': '0:0',
-                'userns_mode': 'host',
                 'network': 'bridge',
                 'privileged': True,
                 'read_only': False,
+                'cpu_period': 100000,
+                'cpu_quota': 50000,
+                'cpu_shares': 512,
+                'pids_limit': 128,
+                'mem_limit': '768m',
                 'tmpfs': {
                     "/run": "rw,nosuid,nodev,exec,mode=755",
                     "/var/lib/containers": "rw,nosuid,nodev,exec,mode=755",
                     "/tmp": "size=256m,rw,nosuid,nodev",
+                    "/home": "size=128m,rw,exec,nosuid,nodev",
                 },
             })
         else:

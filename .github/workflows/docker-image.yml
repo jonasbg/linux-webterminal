@@ -7,9 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build-and-push:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -23,18 +21,18 @@ jobs:
       run: |
         SERVER_IMAGE="ghcr.io/${{ github.repository }}/terminal-server"
         SERVER_TAG="latest"
-        cd src/
-        docker build . -f Dockerfile -t $SERVER_IMAGE:$SERVER_TAG
-        docker push $SERVER_IMAGE:$SERVER_TAG
+        docker build . -f Dockerfile -t "$SERVER_IMAGE:$SERVER_TAG"
+        docker push "$SERVER_IMAGE:$SERVER_TAG"
 
     # Build and push all course images
     - name: Build and push course images
       run: |
-        for dir in courses/*/; do
-          if [ -f "$dir/Dockerfile" ]; then
-            COURSE_NAME=$(basename "$dir")
-            IMAGE="ghcr.io/${{ github.repository }}/terminal-${COURSE_NAME}"
-            docker build "$dir" -t "$IMAGE:latest"
-            docker push "$IMAGE:latest"
+        for course in linux-1 linux-2 containers docker git-signing supply-chain kubernetes kubernetes-networking; do
+          IMAGE="ghcr.io/${{ github.repository }}/terminal-${course}:latest"
+          if [ "$course" = "kubernetes-networking" ]; then
+            docker build courses/ -f "courses/${course}/Dockerfile" -t "$IMAGE"
+          else
+            docker build "courses/${course}/" -f "courses/${course}/Dockerfile" -t "$IMAGE"
           fi
+          docker push "$IMAGE"
         done
