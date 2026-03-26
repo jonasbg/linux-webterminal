@@ -1,5 +1,7 @@
 FROM docker.io/aquasec/trivy:0.69.3 AS trivy
 
+RUN trivy image --download-db-only --cache-dir /trivy-cache
+
 FROM alpine:latest
 
 # System dependencies including podman for container-in-container
@@ -21,7 +23,7 @@ RUN echo 'termuser:100000:65536' >> /etc/subuid && \
     echo 'termuser:100000:65536' >> /etc/subgid
 
 # Create restricted environment structure
-RUN mkdir -p /usr/local/bin /home/termuser/.local/share/containers/storage && \
+RUN mkdir -p /usr/local/bin /home/termuser/.local/share/containers/storage /opt/trivy-cache && \
     chown -R termuser:termuser /home/termuser/.local && \
     chmod -R 755 /home/termuser/.local
 
@@ -42,6 +44,7 @@ RUN chmod +x /usr/local/bin/cat
 
 # Copy Trivy from the official image
 COPY --from=trivy /usr/local/bin/trivy /usr/local/bin/trivy
+COPY --from=trivy /trivy-cache /opt/trivy-cache
 
 # Copy workshop materials into the image
 COPY instructions.md /home/termuser/instructions.md
@@ -115,7 +118,7 @@ export HOME=/home/termuser
 export LESS=-FRX
 export XDG_RUNTIME_DIR=/tmp/podman-run-1000
 export XDG_CACHE_HOME=/tmp/.cache
-export TRIVY_CACHE_DIR=/var/lib/containers/trivy
+export TRIVY_CACHE_DIR=/opt/trivy-cache
 mkdir -p "$XDG_RUNTIME_DIR"
 mkdir -p "$XDG_CACHE_HOME" "$TRIVY_CACHE_DIR"
 podman_socket=unix:///tmp/podman-run-1000/podman/podman.sock
@@ -129,7 +132,24 @@ trivy() {
             i=$((i + 1))
         done
     fi
-    DOCKER_HOST="$podman_socket" command trivy "$@"
+    case "$1" in
+        image|filesystem|fs|rootfs|repository|repo|sbom|vm|config|kubernetes)
+            subcommand="$1"
+            shift
+            DOCKER_HOST="$podman_socket" command trivy \
+                --cache-dir "$TRIVY_CACHE_DIR" \
+                "$subcommand" \
+                --skip-db-update \
+                --skip-java-db-update \
+                --skip-check-update \
+                "$@"
+            ;;
+        *)
+            DOCKER_HOST="$podman_socket" command trivy \
+                --cache-dir "$TRIVY_CACHE_DIR" \
+                "$@"
+            ;;
+    esac
 }
 
 readonly PATH
