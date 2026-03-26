@@ -1,8 +1,8 @@
-FROM python:3.12
+FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN pip install flask requests
+RUN pip install --no-cache-dir flask requests
 
 COPY <<'EOF' /app/app.py
 from flask import Flask
